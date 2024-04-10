@@ -19,14 +19,13 @@ const { title } = Astro.props;
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
   </head>
-  <body>
+  <body class="bg-background-main">
     <slot />
   </body>
 </html>
 <style is:global>
   html {
     font-family: system-ui, sans-serif;
-    background: #9faac7;
   }
   canvas {
     max-width: 100%;
