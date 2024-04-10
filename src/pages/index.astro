@@ -40,11 +40,67 @@ import Layout from "../layouts/Layout.astro";
             class="border border-gray-300 rounded-md p-2 mb-2"
           />
           <button
+            id="downloadButton"
             class="tabbable px-4 py-3 bg-buttons-purple hover:bg-buttons-purpleHover text-white cursor-pointer inline-flex items-center justify-center rounded-lg font-medium transition-[transform,background-color] duration-100 active:scale-105 md:px-6 disabled:!cursor-not-allowed disabled:bg-opacity-60 disabled:text-opacity-60"
             >Download</button
           >
+          <div id="imageContainer" class="mt-4 max-w-3xl w-full relative"></div>
         </div>
       </div>
     </div>
   </div>
+
+  <script>
+    import {
+      getSplitImages,
+      downloadSplitImage,
+    } from "src/utils/image-splitter";
+
+    const gridXInput = document.getElementById("gridX") as HTMLInputElement;
+    const gridYInput = document.getElementById("gridY") as HTMLInputElement;
+    const imageInput = document.getElementById("imageInput");
+    const downloadButton = document.getElementById("downloadButton");
+
+    if (!gridXInput || !gridYInput || !imageInput || !downloadButton) {
+      throw new Error("Element not found");
+    }
+
+    let splitImages: HTMLCanvasElement[] = [];
+    let file: File | undefined = undefined;
+
+    async function handleUploadImages(e: Event) {
+      const gridX = Number(gridXInput.value);
+      const gridY = Number(gridYInput.value);
+      file = (e.target as HTMLInputElement)?.files?.[0] ?? file;
+
+      try {
+        splitImages = await getSplitImages({
+          file,
+          gridX,
+          gridY,
+          target: "#imageContainer",
+        });
+      } catch (error) {
+        // TODO: Implement notification
+        console.error(error);
+      }
+    }
+
+    async function handleDownload() {
+      const gridX = Number(gridXInput.value);
+      const gridY = Number(gridYInput.value);
+
+      try {
+        downloadSplitImage({ gridX, gridY, splitImages });
+      } catch (error) {
+        // TODO: Implement notification
+        console.error(error);
+      }
+    }
+
+    gridXInput.addEventListener("change", handleUploadImages);
+    gridYInput.addEventListener("change", handleUploadImages);
+    imageInput.addEventListener("change", handleUploadImages);
+    downloadButton.addEventListener("click", handleDownload);
+  </script>
 </Layout>
