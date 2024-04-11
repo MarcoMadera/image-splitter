@@ -64,7 +64,7 @@ import Layout from "../layouts/Layout.astro";
     const gridYInput = document.getElementById("gridY") as HTMLInputElement;
     const imageInput = document.getElementById("imageInput");
     const downloadButton = document.getElementById("downloadButton");
-    const imageContianer = document.getElementById("imageContainer");
+    const imageContainer = document.getElementById("imageContainer");
 
     if (!gridXInput || !gridYInput || !imageInput || !downloadButton) {
       throw new Error("Element not found");
@@ -85,8 +85,8 @@ import Layout from "../layouts/Layout.astro";
           state.name = removeFileExtension(file?.name);
           state.extension = getFileNameExtension(file?.name);
 
-          if (!file && imageContianer) {
-            imageContianer.innerHTML = "";
+          if (!file && imageContainer) {
+            imageContainer.innerHTML = "";
           }
 
           toggleDownloadButton(!file);
@@ -109,7 +109,7 @@ import Layout from "../layouts/Layout.astro";
       }
     }
 
-    async function handleUploadImages(e: Event) {
+    async function handleChangeImage(e: Event) {
       const gridX = Number(gridXInput.value);
       const gridY = Number(gridYInput.value);
       uploadedImageState.file =
@@ -142,9 +142,9 @@ import Layout from "../layouts/Layout.astro";
       }
     }
 
-    gridXInput.addEventListener("change", handleUploadImages);
-    gridYInput.addEventListener("change", handleUploadImages);
-    imageInput.addEventListener("change", handleUploadImages);
+    gridXInput.addEventListener("change", handleChangeImage);
+    gridYInput.addEventListener("change", handleChangeImage);
+    imageInput.addEventListener("change", handleChangeImage);
     downloadButton.addEventListener("click", handleDownload);
   </script>
 </Layout>
