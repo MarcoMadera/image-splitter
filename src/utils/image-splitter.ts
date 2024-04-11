@@ -68,7 +68,10 @@ export async function getSplitImages({
     throw new Error("File not provided");
   }
 
-  if (!uploadedImageState.file.type.startsWith("image")) {
+  if (
+    uploadedImageState.file instanceof File &&
+    !uploadedImageState.file.type.startsWith("image")
+  ) {
     throw new Error("Invalid file type");
   }
 
@@ -78,67 +81,72 @@ export async function getSplitImages({
     throw new Error("Target not found");
   }
 
+  const uploadImage = (result?: FileReader["result"]) =>
+    new Promise<HTMLCanvasElement[]>((resolve, reject) => {
+      const base64PNG = getBase64PNG(result);
+      if (!base64PNG) {
+        reject(new Error("Invalid file type"));
+        return;
+      }
+
+      const img = new Image();
+      const originalImage = new Image();
+
+      img.src = base64PNG;
+      originalImage.src = base64PNG;
+      imageTarget.innerHTML = "";
+
+      originalImage.onload = function () {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        canvas.width = originalImage.width;
+        canvas.height = originalImage.height;
+        ctx.drawImage(originalImage, 0, 0);
+        const cellWidth = originalImage.width / gridX;
+        const cellHeight = originalImage.height / gridY;
+        ctx.strokeStyle = "red";
+
+        for (let i = 1; i < gridX; i++) {
+          ctx.beginPath();
+          ctx.moveTo(i * cellWidth, 0);
+          ctx.lineTo(i * cellWidth, originalImage.height);
+          ctx.stroke();
+        }
+
+        for (let i = 1; i < gridY; i++) {
+          ctx.beginPath();
+          ctx.moveTo(0, i * cellHeight);
+          ctx.lineTo(originalImage.width, i * cellHeight);
+          ctx.stroke();
+        }
+
+        imageTarget.appendChild(canvas);
+      };
+
+      img.onload = function () {
+        resolve(drawGrid({ img, gridX, gridY }));
+      };
+    });
+
   const reader = new FileReader();
 
   const splitImages = await new Promise<HTMLCanvasElement[]>(
     (resolve, reject) => {
-      reader.onload = function (e: ProgressEvent<FileReader>) {
-        const base64PNG = getBase64PNG(e.target?.result);
-        if (!base64PNG) {
-          reject(new Error("Invalid file type"));
-          return;
-        }
-
-        if (!base64PNG.startsWith("data:image")) {
-          reject(new Error("Invalid file type transformation"));
-          return;
-        }
-
-        const img = new Image();
-        const originalImage = new Image();
-
-        img.src = base64PNG;
-        originalImage.src = base64PNG;
-        imageTarget.innerHTML = "";
-
-        originalImage.onload = function () {
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return;
-          canvas.width = originalImage.width;
-          canvas.height = originalImage.height;
-          ctx.drawImage(originalImage, 0, 0);
-          const cellWidth = originalImage.width / gridX;
-          const cellHeight = originalImage.height / gridY;
-          ctx.strokeStyle = "red";
-
-          for (let i = 1; i < gridX; i++) {
-            ctx.beginPath();
-            ctx.moveTo(i * cellWidth, 0);
-            ctx.lineTo(i * cellWidth, originalImage.height);
-            ctx.stroke();
-          }
-
-          for (let i = 1; i < gridY; i++) {
-            ctx.beginPath();
-            ctx.moveTo(0, i * cellHeight);
-            ctx.lineTo(originalImage.width, i * cellHeight);
-            ctx.stroke();
-          }
-
-          imageTarget.appendChild(canvas);
+      if (uploadedImageState.file instanceof File) {
+        reader.onload = (e: ProgressEvent<FileReader>) => {
+          uploadImage(e.target?.result).then(resolve).catch(reject);
         };
 
-        img.onload = function () {
-          resolve(drawGrid({ img, gridX, gridY }));
-        };
-      };
-
-      if (!uploadedImageState.file) {
-        reject(new Error("File not found while reading file"));
+        if (!uploadedImageState.file) {
+          reject(new Error("File not found while reading file"));
+          return;
+        }
+        reader.readAsDataURL(uploadedImageState.file);
         return;
       }
-      reader.readAsDataURL(uploadedImageState.file);
+
+      uploadImage(uploadedImageState.file).then(resolve).catch(reject);
     }
   );
 

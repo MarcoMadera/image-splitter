@@ -1,5 +1,9 @@
 ---
+import { Image } from "astro:assets";
 import Layout from "../layouts/Layout.astro";
+import { getImages } from "utils/apiCalls";
+
+const images = await getImages();
 ---
 
 <Layout title="Image Splitter">
@@ -46,10 +50,63 @@ import Layout from "../layouts/Layout.astro";
             >Download
           </button>
           <div id="imageContainer" class="mt-4 max-w-3xl w-full relative"></div>
+          <h2 class="text-white text-2xl font-bold mb-1 mt-16">
+            Explore Images for Splitting
+          </h2>
+          <div class="container mx-auto px-4 py-8">
+            <div class="flex flex-wrap justify-center gap-4 py-2">
+              {
+                images?.map((image) => {
+                  return (
+                    <button
+                      id={image.id}
+                      class="group relative h-56 rounded shadow transition hover:z-10 hover:scale-125 hover:shadow-lg motion-reduce:hover:scale-105"
+                    >
+                      <Image
+                        src={image.urls.small}
+                        alt={image.alt_description}
+                        class="h-full object-cover"
+                        width={300}
+                        height={200}
+                        loading={"eager"}
+                      />
+                      <div class="absolute left-0 top-0 flex size-full flex-col items-start justify-end bg-black/25 p-2 opacity-0 transition-opacity group-hover:opacity-100">
+                        <p
+                          class=" mb-2 line-clamp-2 justify-start text-ellipsis text-left text-xs text-white opacity-90"
+                          title={image.description ?? ""}
+                        >
+                          {image.description}
+                        </p>
+                        <a
+                          href={image.user.links.html}
+                          class="z-20 font-semibold text-white"
+                          target="_blank"
+                        >
+                          <Image
+                            src={image.user.profile_image.medium}
+                            class="mr-1 inline-block h-8 rounded-full"
+                            alt={image.user.first_name}
+                            width={32}
+                            height={32}
+                            loading={"eager"}
+                          />
+                          {image.user.first_name}
+                        </a>
+                      </div>
+                    </button>
+                  );
+                })
+              }
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
+
+  <script is:inline define:vars={{ images }} type="module">
+    localStorage.setItem("images", JSON.stringify(images));
+  </script>
 
   <script>
     import {
@@ -59,13 +116,13 @@ import Layout from "../layouts/Layout.astro";
       getFileNameExtension,
     } from "utils/image-splitter";
     import type { IUploadedImageState } from "types/image-splitter";
+    import type { Images } from "types/imagesResponse";
 
     const gridXInput = document.getElementById("gridX") as HTMLInputElement;
     const gridYInput = document.getElementById("gridY") as HTMLInputElement;
     const imageInput = document.getElementById("imageInput");
     const downloadButton = document.getElementById("downloadButton");
     const imageContainer = document.getElementById("imageContainer");
-
     if (!gridXInput || !gridYInput || !imageInput || !downloadButton) {
       throw new Error("Element not found");
     }
@@ -81,12 +138,18 @@ import Layout from "../layouts/Layout.astro";
         state[prop] = value;
 
         if (prop === "file") {
-          const file = value as IUploadedImageState["file"];
-          state.name = removeFileExtension(file?.name);
-          state.extension = getFileNameExtension(file?.name);
+          const file = value;
+          if (file instanceof File) {
+            state.name = removeFileExtension(file?.name);
+            state.extension = getFileNameExtension(file?.name);
+          } else {
+            state.name = "image";
+            state.extension = "";
+          }
 
           if (!file && imageContainer) {
             imageContainer.innerHTML = "";
+            state.extension = "";
           }
 
           toggleDownloadButton(!file);
@@ -97,7 +160,7 @@ import Layout from "../layouts/Layout.astro";
     };
 
     const uploadedImageState = new Proxy<IUploadedImageState>(
-      { file: null, name: "", extension: "" },
+      { file: null, name: "image", extension: "" },
       uploadedImageStateHandler
     );
 
@@ -146,5 +209,27 @@ import Layout from "../layouts/Layout.astro";
     gridYInput.addEventListener("change", handleChangeImage);
     imageInput.addEventListener("change", handleChangeImage);
     downloadButton.addEventListener("click", handleDownload);
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const images: Images | null = JSON.parse(
+        localStorage.getItem("images") ?? "[]"
+      );
+
+      if (images) {
+        images.forEach((image) => {
+          const button = document.getElementById(image.id);
+          if (!button) return;
+
+          button.addEventListener("click", () => {
+            uploadedImageState.file = "/_image?href=" + image.urls.full;
+            handleChangeImage(new Event("change"));
+            // TODO: Add loading animation
+
+            // TODO: Remove this and only scroll when upload is done
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          });
+        });
+      }
+    });
   </script>
 </Layout>
