@@ -1,10 +1,9 @@
 import JSZip from "jszip";
-
-interface IDrawGrid {
-  img: HTMLImageElement;
-  gridX: IGetSplitImages["gridX"];
-  gridY: IGetSplitImages["gridY"];
-}
+import type {
+  IDownloadSplitImage,
+  IDrawGrid,
+  IGetSplitImages,
+} from "types/image-splitter";
 
 export function drawGrid({
   gridX,
@@ -42,24 +41,34 @@ export function drawGrid({
   return canvasArray;
 }
 
-interface IGetSplitImages {
-  gridX: number;
-  gridY: number;
-  file: File | undefined;
-  target: string;
+function arrayBufferToBase64PNG(result: ArrayBuffer) {
+  const uInt8Array = new Uint8Array(result);
+  const data = uInt8Array.reduce((d, byte) => {
+    return d + String.fromCharCode(byte);
+  }, "");
+  const base64String = btoa(data);
+  return `data:image/png;base64,${base64String}`;
+}
+
+function getBase64PNG(result?: FileReader["result"]): string {
+  if (!result) return "";
+  const isArrayBuffer = result instanceof ArrayBuffer;
+  const base64PNG = isArrayBuffer ? arrayBufferToBase64PNG(result) : result;
+
+  return base64PNG;
 }
 
 export async function getSplitImages({
   gridX,
   gridY,
-  file,
+  uploadedImageState,
   target,
 }: IGetSplitImages): Promise<HTMLCanvasElement[]> {
-  if (!file) {
+  if (!uploadedImageState.file) {
     throw new Error("File not provided");
   }
 
-  if (!file.type.startsWith("image")) {
+  if (!uploadedImageState.file.type.startsWith("image")) {
     throw new Error("Invalid file type");
   }
 
@@ -74,16 +83,13 @@ export async function getSplitImages({
   const splitImages = await new Promise<HTMLCanvasElement[]>(
     (resolve, reject) => {
       reader.onload = function (e: ProgressEvent<FileReader>) {
-        const fileResult = e.target?.result;
-        if (!fileResult) {
+        const base64PNG = getBase64PNG(e.target?.result);
+        if (!base64PNG) {
           reject(new Error("Invalid file type"));
           return;
         }
 
-        if (
-          typeof fileResult === "string" &&
-          !fileResult.startsWith("data:image")
-        ) {
+        if (!base64PNG.startsWith("data:image")) {
           reject(new Error("Invalid file type transformation"));
           return;
         }
@@ -91,8 +97,8 @@ export async function getSplitImages({
         const img = new Image();
         const originalImage = new Image();
 
-        img.src = e.target?.result as string;
-        originalImage.src = e.target?.result as string;
+        img.src = base64PNG;
+        originalImage.src = base64PNG;
         imageTarget.innerHTML = "";
 
         originalImage.onload = function () {
@@ -128,26 +134,22 @@ export async function getSplitImages({
         };
       };
 
-      reader.readAsDataURL(file);
+      if (!uploadedImageState.file) {
+        reject(new Error("File not found while reading file"));
+        return;
+      }
+      reader.readAsDataURL(uploadedImageState.file);
     }
   );
 
   return splitImages;
 }
 
-interface IDownloadSplitImage {
-  gridX: IGetSplitImages["gridX"];
-  gridY: IGetSplitImages["gridY"];
-  splitImages: HTMLCanvasElement[];
-}
-
-export function downloadSplitImage({
-  gridX,
-  gridY,
+export async function downloadSplitImage({
+  outputName,
   splitImages,
-}: IDownloadSplitImage): void {
+}: IDownloadSplitImage): Promise<void> {
   const zip = new JSZip();
-  const imgName = "split_image";
 
   if (!splitImages.length) {
     throw new Error("No split images found");
@@ -161,21 +163,34 @@ export function downloadSplitImage({
       throw new Error("Invalid image data");
     }
 
-    zip.file(`${imgName}_${index + 1}.png`, imgData, {
+    zip.file(`${outputName}_${index + 1}.png`, imgData, {
       base64: true,
     });
   });
 
-  zip.generateAsync({ type: "blob" }).then(function (content) {
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(content);
-    link.download = `${imgName}_grid_${gridX}x${gridY}.zip`;
-    document.body.appendChild(link);
-    link.click();
+  const content = await zip.generateAsync({ type: "blob" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(content);
+  link.download = `${outputName}.zip`;
+  document.body.appendChild(link);
+  link.click();
 
-    setTimeout(function () {
-      document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
-    }, 100);
-  });
+  setTimeout(function () {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  }, 100);
+}
+
+export function removeFileExtension(fileName?: string): string {
+  if (!fileName) {
+    return "";
+  }
+  return fileName.replace(/\.[^/.]+$/, "");
+}
+
+export function getFileNameExtension(fileName?: string): string {
+  if (!fileName) {
+    return "";
+  }
+  return fileName.split(".").pop() ?? "";
 }
