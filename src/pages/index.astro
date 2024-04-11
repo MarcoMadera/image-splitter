@@ -32,8 +32,8 @@ import Layout from "../layouts/Layout.astro";
               class="border border-gray-300 rounded-md p-2 mb-2 text-black"
               value="3"
               min="2"
-            /></label
-          >
+            />
+          </label>
           <input
             type="file"
             id="imageInput"
@@ -41,9 +41,10 @@ import Layout from "../layouts/Layout.astro";
           />
           <button
             id="downloadButton"
+            disabled
             class="tabbable px-4 py-3 bg-buttons-purple hover:bg-buttons-purpleHover text-white cursor-pointer inline-flex items-center justify-center rounded-lg font-medium transition-[transform,background-color] duration-100 active:scale-105 md:px-6 disabled:!cursor-not-allowed disabled:bg-opacity-60 disabled:text-opacity-60"
-            >Download</button
-          >
+            >Download
+          </button>
           <div id="imageContainer" class="mt-4 max-w-3xl w-full relative"></div>
         </div>
       </div>
@@ -54,34 +55,76 @@ import Layout from "../layouts/Layout.astro";
     import {
       getSplitImages,
       downloadSplitImage,
-    } from "src/utils/image-splitter";
+      removeFileExtension,
+      getFileNameExtension,
+    } from "utils/image-splitter";
+    import type { IUploadedImageState } from "types/image-splitter";
 
     const gridXInput = document.getElementById("gridX") as HTMLInputElement;
     const gridYInput = document.getElementById("gridY") as HTMLInputElement;
     const imageInput = document.getElementById("imageInput");
     const downloadButton = document.getElementById("downloadButton");
+    const imageContianer = document.getElementById("imageContainer");
 
     if (!gridXInput || !gridYInput || !imageInput || !downloadButton) {
       throw new Error("Element not found");
     }
 
     let splitImages: HTMLCanvasElement[] = [];
-    let file: File | undefined = undefined;
+
+    const uploadedImageStateHandler = {
+      set: <T extends keyof IUploadedImageState>(
+        state: IUploadedImageState,
+        prop: T,
+        value: IUploadedImageState[T]
+      ): boolean => {
+        state[prop] = value;
+
+        if (prop === "file") {
+          const file = value as IUploadedImageState["file"];
+          state.name = removeFileExtension(file?.name);
+          state.extension = getFileNameExtension(file?.name);
+
+          if (!file && imageContianer) {
+            imageContianer.innerHTML = "";
+          }
+
+          toggleDownloadButton(!file);
+        }
+
+        return true;
+      },
+    };
+
+    const uploadedImageState = new Proxy<IUploadedImageState>(
+      { file: null, name: "", extension: "" },
+      uploadedImageStateHandler
+    );
+
+    function toggleDownloadButton(disabled?: boolean) {
+      if (disabled) {
+        downloadButton?.setAttribute("disabled", "");
+      } else {
+        downloadButton?.removeAttribute("disabled");
+      }
+    }
 
     async function handleUploadImages(e: Event) {
       const gridX = Number(gridXInput.value);
       const gridY = Number(gridYInput.value);
-      file = (e.target as HTMLInputElement)?.files?.[0] ?? file;
+      uploadedImageState.file =
+        (e.target as HTMLInputElement)?.files?.[0] ?? uploadedImageState.file;
 
       try {
         splitImages = await getSplitImages({
-          file,
+          uploadedImageState,
           gridX,
           gridY,
           target: "#imageContainer",
         });
       } catch (error) {
         // TODO: Implement notification
+        uploadedImageState.file = null;
         console.error(error);
       }
     }
@@ -89,9 +132,10 @@ import Layout from "../layouts/Layout.astro";
     async function handleDownload() {
       const gridX = Number(gridXInput.value);
       const gridY = Number(gridYInput.value);
+      const outputName = `${uploadedImageState.name}_grid_${gridX}x${gridY}`;
 
       try {
-        downloadSplitImage({ gridX, gridY, splitImages });
+        await downloadSplitImage({ outputName, splitImages });
       } catch (error) {
         // TODO: Implement notification
         console.error(error);
