@@ -9,10 +9,13 @@ import { allThemes, defaultTheme, safeThemeList } from "./themes";
 const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,astro}"],
   safelist: safeThemeList,
+  darkMode: "class",
   theme: {
     extend: {
       screens: {
         ssm: "400px",
+        md: "768px",
+        lg: "1024px",
       },
 
       fontFamily: {
