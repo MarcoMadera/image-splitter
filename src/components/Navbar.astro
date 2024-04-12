@@ -1,0 +1,156 @@
+---
+import { Icon } from "astro-icon/components";
+import { LinkPreset, type NavBarConfig, type NavBarLink } from "types/navBar";
+import NavMenuPanel from "./NavMenuPanel.astro";
+
+interface Props {
+  class?: string;
+}
+
+const className = Astro.props.class;
+
+const navBarConfig: NavBarConfig = {
+  links: [
+    LinkPreset.Splitter,
+    LinkPreset.Test,
+    {
+      name: "GitHub",
+      url: "https://github.com/MarcoMadera/image-splitter",
+      external: true,
+    },
+  ],
+};
+
+const LinkPresets: { [key in LinkPreset]: NavBarLink } = {
+  [LinkPreset.Splitter]: {
+    name: "Splitter",
+    url: "/",
+  },
+  [LinkPreset.Test]: {
+    name: "Test",
+    url: "/test",
+  },
+};
+
+let links: NavBarLink[] = navBarConfig.links.map(
+  (item: NavBarLink | LinkPreset): NavBarLink => {
+    if (typeof item === "number") {
+      return LinkPresets[item];
+    }
+    return item;
+  }
+);
+---
+
+<div
+  id="top-row"
+  class="col-span-2 grid-rows-1 z-50 onload-animation lg:col-3 lg:col-start-1 lg:col-end-3"
+>
+  <div
+    class:list={[
+      className,
+      "card-base sticky top-0 overflow-visible max-w-[var(--page-width)] h-[4.5rem] rounded-t-none mx-auto flex items-center justify-between px-4",
+    ]}
+  >
+    <a
+      href="/"
+      class="btn-plain h-[3.25rem] px-5 font-bold rounded-lg active:scale-95"
+    >
+      <div class="flex flex-row text-[var(--primary)] items-center text-md">
+        <Icon
+          name="material-symbols:home-outline-rounded"
+          size={28}
+          class="mb-1 mr-2"
+        />
+        Images
+      </div>
+    </a>
+    <div class="hidden md:flex">
+      {
+        links.map((navBarLink) => {
+          return (
+            <a
+              aria-label={navBarLink.name}
+              href={navBarLink.url}
+              target={navBarLink.external ? "_blank" : null}
+              class="btn-plain h-11 font-bold px-5 rounded-lg active:scale-95"
+            >
+              <div class="flex items-center">
+                {navBarLink.name}
+                {navBarLink.external && (
+                  <Icon
+                    size={14}
+                    name="fa6-solid:arrow-up-right-from-square"
+                    class="transition -translate-y-[1px] ml-1 text-black/[0.2] dark:text-white/[0.2]"
+                  />
+                )}
+              </div>
+            </a>
+          );
+        })
+      }
+    </div>
+    <div class="flex">
+      <button
+        aria-label="Light/Dark Mode"
+        class="btn-plain h-11 w-11 rounded-lg active:scale-90"
+        id="scheme-switch"
+      >
+        <Icon
+          name="material-symbols:wb-sunny-outline-rounded"
+          size={20}
+          class="absolute opacity-[var(--display-light-icon)]"
+        />
+        <Icon
+          name="material-symbols:dark-mode-outline-rounded"
+          size={20}
+          class="absolute opacity-[var(--display-dark-icon)]"
+        />
+      </button>
+      <button
+        aria-label="Menu"
+        name="Nav Menu"
+        class="btn-plain w-11 h-11 rounded-lg active:scale-90 md:hidden"
+        id="nav-menu-switch"
+      >
+        <Icon name="material-symbols:menu-rounded" size={20} />
+      </button>
+    </div>
+    <NavMenuPanel links={links} />
+  </div>
+</div>
+
+<script>
+  function switchTheme() {
+    if (localStorage.theme === "dark") {
+      document.documentElement.classList.remove("dark");
+      localStorage.theme = "light";
+    } else {
+      document.documentElement.classList.add("dark");
+      localStorage.theme = "dark";
+    }
+  }
+
+  function loadButtonScript() {
+    let switchBtn = document.getElementById("scheme-switch");
+    switchBtn?.addEventListener("click", function () {
+      switchTheme();
+    });
+
+    let menuBtn = document.getElementById("nav-menu-switch");
+    menuBtn?.addEventListener("click", function () {
+      let menuPanel = document.getElementById("nav-menu-panel");
+      menuPanel?.classList.toggle("closed");
+    });
+  }
+
+  loadButtonScript();
+
+  document.addEventListener(
+    "astro:after-swap",
+    () => {
+      loadButtonScript();
+    },
+    { once: false }
+  );
+</script>

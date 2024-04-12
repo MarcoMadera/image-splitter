@@ -1,34 +1,93 @@
 ---
+import Footer from "components/Footer.astro";
+import GlobalStyles from "components/GlobalStyles.astro";
+import Navbar from "components/Navbar.astro";
+import { SITE_DEFAULT_HUE } from "utils";
 interface Props {
   title: string;
 }
 
-const { title } = Astro.props;
+let { title } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en">
+<html
+  lang="en"
+  class="bg-[var(--page-bg)] transition text-[14px] md:text-[16px]"
+>
   <head>
     <meta charset="UTF-8" />
     <meta
       name="description"
       content="I need to split some images and I have chosen the web to do it. Splitting images into a grid and downloading the split images as a ZIP file"
     />
-    <meta name="viesswport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <style define:vars={{ configHue: SITE_DEFAULT_HUE }}></style>
   </head>
-  <body class="bg-background-main">
-    <slot />
+  <body class="transition min-h-screen">
+    <GlobalStyles>
+      <div
+        class:list={[
+          "max-w-[var(--page-width)]",
+          "min-h-screen",
+          "grid",
+          "grid-cols-[26rem_auto]",
+          "grid-rows-[auto_auto_1fr_auto]",
+          "mx-auto",
+          "gap-4",
+          "relative",
+          "px-0",
+          "md:px-4",
+        ]}
+      >
+        <Navbar />
+        <slot />
+        <Footer />
+      </div>
+    </GlobalStyles>
   </body>
 </html>
 <style is:global>
-  html {
-    font-family: system-ui, sans-serif;
+  :root {
+    --hue: var(--configHue);
+    --page-width: 100rem;
   }
   canvas {
     max-width: 100%;
     height: auto;
   }
 </style>
+<script>
+  import { setClickOutsideToClose } from "utils";
+  import { onSwup } from "utils";
+  setClickOutsideToClose("search-panel", [
+    "search-panel",
+    "search-bar",
+    "search-switch",
+  ]);
+
+  function loadTheme() {
+    if (
+      localStorage.theme === "dark" ||
+      (!("theme" in localStorage) &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches)
+    ) {
+      document.documentElement.classList.add("dark");
+      localStorage.theme = "dark";
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.theme = "light";
+    }
+  }
+
+  loadTheme();
+
+  document.addEventListener("astro:after-swap", loadTheme);
+
+  onSwup("link:click", () => {
+    document.documentElement.style.setProperty("--content-delay", "0ms");
+  });
+</script>

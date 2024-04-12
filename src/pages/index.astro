@@ -1,108 +1,21 @@
 ---
-import { Image } from "astro:assets";
-import Layout from "../layouts/Layout.astro";
 import { getImages } from "utils/apiCalls";
+import SplitterLayout from "layouts/Splitter.astro";
+import SplitterControls from "components/SplitterControls.astro";
+import ImagesWrapper from "components/ImagesWrapper.astro";
+import SplitterDragAndDrop from "components/SplitterDragAndDrop.astro";
 
 const images = await getImages();
 ---
 
-<Layout title="Image Splitter">
-  <div class="flex flex-col h-screen">
-    <div class="mt-44 space-y-16 text-center">
-      <div class="relative z-10 mb-16">
-        <h1
-          class="text-2xl font-bold text-white sm:text-3xl md:text-4xl mb-3 mx-auto max-w-md"
-        >
-          Image Splitter
-        </h1>
-        <div class="flex flex-col items-center justify-center">
-          <label class="text-white">
-            Grid X
-            <input
-              type="number"
-              placeholder="Grid X"
-              id="gridX"
-              class="border border-gray-300 rounded-md p-2 mb-2 text-black"
-              value="3"
-              min="2"
-            />
-          </label>
-          <label class="text-white">
-            Grid Y
-            <input
-              type="number"
-              placeholder="Grid Y"
-              id="gridY"
-              class="border border-gray-300 rounded-md p-2 mb-2 text-black"
-              value="3"
-              min="2"
-            />
-          </label>
-          <input
-            type="file"
-            id="imageInput"
-            class="border border-gray-300 rounded-md p-2 mb-2"
-          />
-          <button
-            id="downloadButton"
-            disabled
-            class="tabbable px-4 py-3 bg-buttons-purple hover:bg-buttons-purpleHover text-white cursor-pointer inline-flex items-center justify-center rounded-lg font-medium transition-[transform,background-color] duration-100 active:scale-105 md:px-6 disabled:!cursor-not-allowed disabled:bg-opacity-60 disabled:text-opacity-60"
-            >Download
-          </button>
-          <div id="imageContainer" class="mt-4 max-w-3xl w-full relative"></div>
-          <h2 class="text-white text-2xl font-bold mb-1 mt-16">
-            Explore Images for Splitting
-          </h2>
-          <div class="container mx-auto px-4 py-8">
-            <div class="flex flex-wrap justify-center gap-4 py-2">
-              {
-                images?.map((image) => {
-                  return (
-                    <button
-                      id={image.id}
-                      class="group relative h-56 rounded shadow transition hover:z-10 hover:scale-125 hover:shadow-lg motion-reduce:hover:scale-105"
-                    >
-                      <Image
-                        src={image.urls.small}
-                        alt={image.alt_description}
-                        class="h-full object-cover"
-                        width={300}
-                        height={200}
-                        loading={"eager"}
-                      />
-                      <div class="absolute left-0 top-0 flex size-full flex-col items-start justify-end bg-black/25 p-2 opacity-0 transition-opacity group-hover:opacity-100">
-                        <p
-                          class=" mb-2 line-clamp-2 justify-start text-ellipsis text-left text-xs text-white opacity-90"
-                          title={image.description ?? ""}
-                        >
-                          {image.description}
-                        </p>
-                        <a
-                          href={image.user.links.html}
-                          class="z-20 font-semibold text-white"
-                          target="_blank"
-                        >
-                          <Image
-                            src={image.user.profile_image.medium}
-                            class="mr-1 inline-block h-8 rounded-full"
-                            alt={image.user.first_name}
-                            width={32}
-                            height={32}
-                            loading={"eager"}
-                          />
-                          {image.user.first_name}
-                        </a>
-                      </div>
-                    </button>
-                  );
-                })
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<SplitterLayout title="Image Splitter">
+  <SplitterControls slot="before-main" />
+  <SplitterDragAndDrop />
+  <ImagesWrapper
+    slot="after-main"
+    images={images}
+    title="Explore images for splitting"
+  />
 
   <script is:inline define:vars={{ images }} type="module">
     localStorage.setItem("images", JSON.stringify(images));
@@ -117,6 +30,7 @@ const images = await getImages();
     } from "utils/image-splitter";
     import type { IUploadedImageState } from "types/image-splitter";
     import type { Images } from "types/imagesResponse";
+    import { onSwup } from "utils";
 
     const gridXInput = document.getElementById("gridX") as HTMLInputElement;
     const gridYInput = document.getElementById("gridY") as HTMLInputElement;
@@ -210,7 +124,7 @@ const images = await getImages();
     imageInput.addEventListener("change", handleChangeImage);
     downloadButton.addEventListener("click", handleDownload);
 
-    window.addEventListener("DOMContentLoaded", () => {
+    function addButtonChangeListener() {
       const images: Images | null = JSON.parse(
         localStorage.getItem("images") ?? "[]"
       );
@@ -221,7 +135,7 @@ const images = await getImages();
           if (!button) return;
 
           button.addEventListener("click", () => {
-            uploadedImageState.file = "/_image?href=" + image.urls.full;
+            uploadedImageState.file = "/_image?href=" + image.urls.regular;
             handleChangeImage(new Event("change"));
             // TODO: Add loading animation
 
@@ -230,6 +144,8 @@ const images = await getImages();
           });
         });
       }
-    });
+    }
+
+    onSwup("content:replace", addButtonChangeListener);
   </script>
-</Layout>
+</SplitterLayout>
