@@ -32,120 +32,127 @@ const images = await getImages();
     import type { Images } from "types/imagesResponse";
     import { onSwup } from "utils";
 
-    const gridXInput = document.getElementById("gridX") as HTMLInputElement;
-    const gridYInput = document.getElementById("gridY") as HTMLInputElement;
-    const imageInput = document.getElementById("imageInput");
-    const downloadButton = document.getElementById("downloadButton");
-    const imageContainer = document.getElementById("imageContainer");
-    if (!gridXInput || !gridYInput || !imageInput || !downloadButton) {
-      throw new Error("Element not found");
-    }
+    function init() {
+      const gridXInput = document.getElementById("gridX") as HTMLInputElement;
+      const gridYInput = document.getElementById("gridY") as HTMLInputElement;
+      const imageInput = document.getElementById("imageInput");
+      const downloadButton = document.getElementById("downloadButton");
+      const imageContainer = document.getElementById("imageContainer");
+      if (!gridXInput || !gridYInput || !imageInput || !downloadButton) {
+        throw new Error("Element not found");
+      }
 
-    let splitImages: HTMLCanvasElement[] = [];
+      let splitImages: HTMLCanvasElement[] = [];
 
-    const uploadedImageStateHandler = {
-      set: <T extends keyof IUploadedImageState>(
-        state: IUploadedImageState,
-        prop: T,
-        value: IUploadedImageState[T]
-      ): boolean => {
-        state[prop] = value;
+      const uploadedImageStateHandler = {
+        set: <T extends keyof IUploadedImageState>(
+          state: IUploadedImageState,
+          prop: T,
+          value: IUploadedImageState[T]
+        ): boolean => {
+          state[prop] = value;
 
-        if (prop === "file") {
-          const file = value;
-          if (file instanceof File) {
-            state.name = removeFileExtension(file?.name);
-            state.extension = getFileNameExtension(file?.name);
-          } else {
-            state.name = "image";
-            state.extension = "";
+          if (prop === "file") {
+            const file = value;
+            if (file instanceof File) {
+              state.name = removeFileExtension(file?.name);
+              state.extension = getFileNameExtension(file?.name);
+            } else {
+              state.name = "image";
+              state.extension = "";
+            }
+
+            if (!file && imageContainer) {
+              imageContainer.innerHTML = "";
+              state.extension = "";
+            }
+
+            toggleDownloadButton(!file);
           }
 
-          if (!file && imageContainer) {
-            imageContainer.innerHTML = "";
-            state.extension = "";
-          }
+          return true;
+        },
+      };
 
-          toggleDownloadButton(!file);
-        }
-
-        return true;
-      },
-    };
-
-    const uploadedImageState = new Proxy<IUploadedImageState>(
-      { file: null, name: "image", extension: "" },
-      uploadedImageStateHandler
-    );
-
-    function toggleDownloadButton(disabled?: boolean) {
-      if (disabled) {
-        downloadButton?.setAttribute("disabled", "");
-      } else {
-        downloadButton?.removeAttribute("disabled");
-      }
-    }
-
-    async function handleChangeImage(e: Event) {
-      const gridX = Number(gridXInput.value);
-      const gridY = Number(gridYInput.value);
-      uploadedImageState.file =
-        (e.target as HTMLInputElement)?.files?.[0] ?? uploadedImageState.file;
-
-      try {
-        splitImages = await getSplitImages({
-          uploadedImageState,
-          gridX,
-          gridY,
-          target: "#imageContainer",
-        });
-      } catch (error) {
-        // TODO: Implement notification
-        uploadedImageState.file = null;
-        console.error(error);
-      }
-    }
-
-    async function handleDownload() {
-      const gridX = Number(gridXInput.value);
-      const gridY = Number(gridYInput.value);
-      const outputName = `${uploadedImageState.name}_grid_${gridX}x${gridY}`;
-
-      try {
-        await downloadSplitImage({ outputName, splitImages });
-      } catch (error) {
-        // TODO: Implement notification
-        console.error(error);
-      }
-    }
-
-    gridXInput.addEventListener("change", handleChangeImage);
-    gridYInput.addEventListener("change", handleChangeImage);
-    imageInput.addEventListener("change", handleChangeImage);
-    downloadButton.addEventListener("click", handleDownload);
-
-    function addButtonChangeListener() {
-      const images: Images | null = JSON.parse(
-        localStorage.getItem("images") ?? "[]"
+      const uploadedImageState = new Proxy<IUploadedImageState>(
+        { file: null, name: "image", extension: "" },
+        uploadedImageStateHandler
       );
 
-      if (images) {
-        images.forEach((image) => {
-          const button = document.getElementById(image.id);
-          if (!button) return;
-
-          button.addEventListener("click", () => {
-            uploadedImageState.file = "/_image?href=" + image.urls.regular;
-            handleChangeImage(new Event("change"));
-            // TODO: Add loading animation
-
-            // TODO: Remove this and only scroll when upload is done
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          });
-        });
+      function toggleDownloadButton(disabled?: boolean) {
+        if (disabled) {
+          downloadButton?.setAttribute("disabled", "");
+        } else {
+          downloadButton?.removeAttribute("disabled");
+        }
       }
+
+      async function handleChangeImage(e: Event) {
+        const gridX = Number(gridXInput.value);
+        const gridY = Number(gridYInput.value);
+        uploadedImageState.file =
+          (e.target as HTMLInputElement)?.files?.[0] ?? uploadedImageState.file;
+
+        try {
+          splitImages = await getSplitImages({
+            uploadedImageState,
+            gridX,
+            gridY,
+            target: "#imageContainer",
+          });
+        } catch (error) {
+          // TODO: Implement notification
+          uploadedImageState.file = null;
+          console.error(error);
+        }
+      }
+
+      async function handleDownload() {
+        const gridX = Number(gridXInput.value);
+        const gridY = Number(gridYInput.value);
+        const outputName = `${uploadedImageState.name}_grid_${gridX}x${gridY}`;
+
+        try {
+          if (gridX <= 0 || gridY <= 0) {
+            throw new Error("Grid size cannot be 0");
+          }
+
+          await downloadSplitImage({ outputName, splitImages });
+        } catch (error) {
+          // TODO: Implement notification
+          console.error(error);
+        }
+      }
+
+      function addButtonChangeListener() {
+        const images: Images | null = JSON.parse(
+          localStorage.getItem("images") ?? "[]"
+        );
+
+        if (images) {
+          images.forEach((image) => {
+            const button = document.getElementById(image.id);
+            if (!button) return;
+
+            button.addEventListener("click", () => {
+              uploadedImageState.file = "/_image?href=" + image.urls.regular;
+              handleChangeImage(new Event("change"));
+              // TODO: Add loading animation
+
+              // TODO: Remove this and only scroll when upload is done
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+          });
+        }
+      }
+
+      gridXInput.addEventListener("change", handleChangeImage);
+      gridYInput.addEventListener("change", handleChangeImage);
+      imageInput?.addEventListener("change", handleChangeImage);
+      downloadButton?.addEventListener("click", handleDownload);
+      addButtonChangeListener();
     }
 
-    onSwup("content:replace", addButtonChangeListener);
+    onSwup("content:replace", init);
   </script>
 </SplitterLayout>
