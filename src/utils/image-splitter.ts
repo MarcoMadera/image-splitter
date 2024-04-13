@@ -106,7 +106,10 @@ export async function getSplitImages({
         ctx.drawImage(originalImage, 0, 0);
         const cellWidth = originalImage.width / gridX;
         const cellHeight = originalImage.height / gridY;
+        ctx.setLineDash([10, 10]);
+        ctx.globalAlpha = 0.6;
         ctx.strokeStyle = "red";
+        ctx.lineWidth = 10;
 
         for (let i = 1; i < gridX; i++) {
           ctx.beginPath();
