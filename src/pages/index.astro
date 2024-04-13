@@ -135,7 +135,11 @@ const images = await getImages();
             if (!button) return;
 
             button.addEventListener("click", () => {
-              uploadedImageState.file = "/_image?href=" + image.urls.regular;
+              const url = new URL(image.urls.regular);
+
+              uploadedImageState.file =
+                "/_image?href=" + encodeURIComponent(url.href);
+
               handleChangeImage(new Event("change"));
               // TODO: Add loading animation
 
