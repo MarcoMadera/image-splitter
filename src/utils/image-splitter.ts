@@ -81,6 +81,8 @@ export async function getSplitImages({
     throw new Error("Target not found");
   }
 
+  imageTarget.innerHTML = "";
+
   const uploadImage = (result?: FileReader["result"]) =>
     new Promise<HTMLCanvasElement[]>((resolve, reject) => {
       const base64PNG = getBase64PNG(result);
@@ -94,7 +96,6 @@ export async function getSplitImages({
 
       img.src = base64PNG;
       originalImage.src = base64PNG;
-      imageTarget.innerHTML = "";
 
       originalImage.onload = function () {
         const canvas = document.createElement("canvas");
@@ -121,6 +122,7 @@ export async function getSplitImages({
           ctx.stroke();
         }
 
+        imageTarget.innerHTML = "";
         imageTarget.appendChild(canvas);
       };
 

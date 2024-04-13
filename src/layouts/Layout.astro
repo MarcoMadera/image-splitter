@@ -32,10 +32,6 @@ let { title } = Astro.props;
       <div
         class:list={[
           "max-w-[var(--page-width)]",
-          "min-h-screen",
-          "grid",
-          "grid-cols-[26rem_auto]",
-          "grid-rows-[auto_auto_1fr_auto]",
           "mx-auto",
           "gap-4",
           "relative",
@@ -44,7 +40,22 @@ let { title } = Astro.props;
         ]}
       >
         <Navbar />
-        <slot />
+        <div
+          id="swup-main-content"
+          class:list={[
+            "max-w-[var(--page-width)]",
+            "h-[calc(100vh - 86px - 86px)]",
+            "grid",
+            "grid-cols-[26rem_auto]",
+            "grid-rows-[auto_auto_1fr_auto]",
+            "mx-auto",
+            "gap-4",
+            "relative",
+            "px-0",
+          ]}
+        >
+          <slot />
+        </div>
         <Footer />
       </div>
     </GlobalStyles>
@@ -57,7 +68,11 @@ let { title } = Astro.props;
   }
   canvas {
     max-width: 100%;
-    height: auto;
+    max-height: 40rem;
+    height: 100%;
+  }
+  #swup-main-content {
+    min-height: calc(100vh - 90px - 70px);
   }
 </style>
 <script>
