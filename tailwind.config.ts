@@ -16,6 +16,7 @@ const config: Config = {
         ssm: "400px",
         md: "768px",
         lg: "1024px",
+        xl: "1280px",
       },
 
       fontFamily: {

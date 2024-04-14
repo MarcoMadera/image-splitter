@@ -1,22 +1,81 @@
 ---
-
+import { Icon } from "astro-icon/components";
 ---
 
 <div class="flex flex-col">
   <div class="space-y-16 text-center">
-    <div class="relative z-10 mb-16">
+    <div class="relative z-10 min-h-96">
       <div class="flex flex-col items-center justify-center min-h-96">
-        <input
-          type="file"
-          id="imageInput"
-          class="border border-gray-300 rounded-md p-2 mb-2"
-        />
         <div
-          id="imageContainer"
-          class="flex mt-4 max-w-3xl w-full relative min-h-[40rem] max-h-[40rem] justify-center items-center"
+          class="min-h-[40rem] max-h-[40rem] flex flex-col items-center justify-center w-full"
         >
+          <div
+            id="imageDropContainer"
+            class="btn-plain flex flex-col items-center justify-center min-h-[40rem] max-h-[40rem] h-[40rem] w-full border-2 border-dashed border-[var(--btn-regular-bg-hover)] rounded-lg"
+          >
+            <label
+              for="imageInput"
+              class="flex flex-col items-center justify-center w-full h-full space-y-4 cursor-pointer"
+            >
+              <Icon name="fa6-solid:plus" size={34} />
+              <p>Browse or drag and drop images here</p>
+            </label>
+            <input
+              id="imageInput"
+              type="file"
+              accept="image/*"
+              multiple
+              class="hidden"
+            />
+          </div>
+          <div
+            id="imageContainer"
+            class="flex hidden flex-col items-center justify-center min-h-[40rem] max-h-[40rem] w-full"
+          >
+          </div>
         </div>
+        <button
+          id="clear-image-btn"
+          class="btn-regular invisible mt-1 tabbable px-2 py-1 cursor-pointer inline-flex items-center justify-center rounded-lg transition-[transform,background-color] duration-100 active:scale-105 disabled:!cursor-not-allowed disabled:bg-opacity-60 disabled:text-opacity-60"
+          >Clear image</button
+        >
       </div>
     </div>
   </div>
+
+  <script>
+    import { onSwup } from "utils";
+
+    onSwup("content:replace", () => {
+      const imageDropContainer = document.getElementById(
+        "imageDropContainer"
+      ) as HTMLDivElement;
+      let backgroundColor = "";
+      let color = "";
+      imageDropContainer.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        backgroundColor = imageDropContainer.style.backgroundColor;
+        color = imageDropContainer.style.color;
+        imageDropContainer.style.backgroundColor = "var(--btn-plain-bg-hover)";
+        imageDropContainer.style.color = "var(--primary)";
+
+        imageDropContainer.classList.add(
+          "border-2",
+          "border-dashed",
+          "border-primary"
+        );
+      });
+
+      imageDropContainer.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        imageDropContainer.classList.remove(
+          "border-2",
+          "border-dashed",
+          "border-primary"
+        );
+        imageDropContainer.style.backgroundColor = backgroundColor;
+        imageDropContainer.style.color = color;
+      });
+    });
+  </script>
 </div>
