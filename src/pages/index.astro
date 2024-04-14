@@ -23,7 +23,7 @@ const images = await getImages();
 
   <script>
     import {
-      getSplitImages,
+      getSplittedImages,
       downloadSplitImage,
       removeFileExtension,
       getFileNameExtension,
@@ -42,7 +42,7 @@ const images = await getImages();
         throw new Error("Element not found");
       }
 
-      let splitImages: ImageData[] = [];
+      let splittedImages: File[] = [];
 
       const uploadedImageStateHandler = {
         set: <T extends keyof IUploadedImageState>(
@@ -94,7 +94,7 @@ const images = await getImages();
           (e.target as HTMLInputElement)?.files?.[0] ?? uploadedImageState.file;
 
         try {
-          splitImages = await getSplitImages({
+          splittedImages = await getSplittedImages({
             uploadedImageState,
             gridX,
             gridY,
@@ -117,7 +117,7 @@ const images = await getImages();
             throw new Error("Grid size cannot be 0");
           }
 
-          await downloadSplitImage({ outputName, splitImages });
+          await downloadSplitImage({ outputName, splittedImages });
         } catch (error) {
           // TODO: Implement notification
           console.error(error);

@@ -4,7 +4,7 @@ export interface IUploadedImageState {
   extension: string;
 }
 
-export interface IGetSplitImages {
+export interface IGetSplittedImages {
   gridX: number;
   gridY: number;
   uploadedImageState: IUploadedImageState;
@@ -13,11 +13,11 @@ export interface IGetSplitImages {
 
 export interface IDrawGrid {
   img: HTMLImageElement;
-  gridX: IGetSplitImages["gridX"];
-  gridY: IGetSplitImages["gridY"];
+  gridX: IGetSplittedImages["gridX"];
+  gridY: IGetSplittedImages["gridY"];
 }
 
 export interface IDownloadSplitImage {
   outputName: string;
-  splitImages: ImageData[];
+  splittedImages: File[];
 }
