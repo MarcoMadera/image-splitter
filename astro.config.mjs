@@ -1,6 +1,6 @@
 // import react from "@astrojs/react";
 import tailwind from "@astrojs/tailwind";
-import vercel from "@astrojs/vercel/serverless";
+import vercel from "@astrojs/vercel/static";
 import swup from "@swup/astro";
 import { defineConfig, passthroughImageService } from "astro/config";
 import icon from "astro-icon";
@@ -30,11 +30,6 @@ export default defineConfig({
       },
     }),
   ],
-  image: {
-    domains: ["images.unsplash.com"],
-    service: passthroughImageService(),
-  },
-  output: "server",
   adapter: vercel(),
   vite: {
     css: {

@@ -18,7 +18,8 @@ export async function getSplittedFiles({
   img,
 }: IDrawGrid): Promise<File[]> {
   const files: File[] = [];
-  const { width, height } = img;
+  const bitmap = await createImageBitmap(img);
+  const { width, height } = bitmap;
 
   const cellWidth = width / gridX;
   const cellHeight = height / gridY;
@@ -29,7 +30,7 @@ export async function getSplittedFiles({
       const ctx = offScreenCanvas.getContext("2d");
       if (!ctx) return [];
       ctx.drawImage(
-        img,
+        bitmap,
         i * cellWidth,
         j * cellHeight,
         cellWidth,
@@ -109,7 +110,9 @@ export async function getSplittedImages({
       const originalImage = new Image();
 
       img.src = base64PNG;
+      img.crossOrigin = "Anonymous";
       originalImage.src = base64PNG;
+      originalImage.crossOrigin = "Anonymous";
 
       originalImage.onload = function () {
         const canvas = document.createElement("canvas");
