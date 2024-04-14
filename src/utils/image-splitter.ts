@@ -5,12 +5,15 @@ import type {
   IGetSplitImages,
 } from "types/image-splitter";
 
-export function drawGrid({
-  gridX,
-  gridY,
-  img,
-}: IDrawGrid): HTMLCanvasElement[] {
-  const canvasArray: HTMLCanvasElement[] = [];
+import { getContrastingColor, getDominantColor, rgbToHex } from "./colors";
+import {
+  GRID_LINE_DASH_SCALE,
+  GRID_LINE_TRANSPARENCY,
+  GRID_LINE_WIDTH_SCALE,
+} from "./constants";
+
+export function drawGrid({ gridX, gridY, img }: IDrawGrid): ImageData[] {
+  const imageDataArray: ImageData[] = [];
   const { width, height } = img;
 
   const cellWidth = width / gridX;
@@ -18,10 +21,8 @@ export function drawGrid({
 
   for (let i = 0; i < gridX; i++) {
     for (let j = 0; j < gridY; j++) {
-      const canvas = document.createElement("canvas");
-      canvas.width = cellWidth;
-      canvas.height = cellHeight;
-      const ctx = canvas.getContext("2d");
+      const offScreenCanvas = new OffscreenCanvas(cellWidth, cellHeight);
+      const ctx = offScreenCanvas.getContext("2d");
       if (!ctx) return [];
       ctx.drawImage(
         img,
@@ -34,11 +35,13 @@ export function drawGrid({
         cellWidth,
         cellHeight
       );
-      canvasArray.push(canvas);
+
+      const imageData = ctx.getImageData(0, 0, cellWidth, cellHeight);
+      imageDataArray.push(imageData);
     }
   }
 
-  return canvasArray;
+  return imageDataArray;
 }
 
 function arrayBufferToBase64PNG(result: ArrayBuffer) {
@@ -63,7 +66,7 @@ export async function getSplitImages({
   gridY,
   uploadedImageState,
   target,
-}: IGetSplitImages): Promise<HTMLCanvasElement[]> {
+}: IGetSplitImages): Promise<ImageData[]> {
   if (!uploadedImageState.file) {
     throw new Error("File not provided");
   }
@@ -84,7 +87,7 @@ export async function getSplitImages({
   imageTarget.innerHTML = "";
 
   const uploadImage = (result?: FileReader["result"]) =>
-    new Promise<HTMLCanvasElement[]>((resolve, reject) => {
+    new Promise<ImageData[]>((resolve, reject) => {
       const base64PNG = getBase64PNG(result);
       if (!base64PNG) {
         reject(new Error("Invalid file type"));
@@ -106,10 +109,24 @@ export async function getSplitImages({
         ctx.drawImage(originalImage, 0, 0);
         const cellWidth = originalImage.width / gridX;
         const cellHeight = originalImage.height / gridY;
-        ctx.setLineDash([10, 10]);
-        ctx.globalAlpha = 0.6;
-        ctx.strokeStyle = "red";
-        ctx.lineWidth = 10;
+        const imageData = ctx?.getImageData(
+          0,
+          0,
+          originalImage.width,
+          originalImage.height
+        );
+        const contrastColor = rgbToHex(
+          getContrastingColor(getDominantColor(imageData))
+        );
+        const lineWidth =
+          Math.min(cellWidth, cellHeight) * GRID_LINE_WIDTH_SCALE;
+        const dashLength =
+          Math.max(cellHeight, cellHeight) * GRID_LINE_DASH_SCALE;
+        ctx.setLineDash([dashLength, dashLength]);
+
+        ctx.lineWidth = lineWidth;
+        ctx.globalAlpha = GRID_LINE_TRANSPARENCY;
+        ctx.strokeStyle = contrastColor ?? "red";
 
         for (let i = 1; i < gridX; i++) {
           ctx.beginPath();
@@ -136,24 +153,22 @@ export async function getSplitImages({
 
   const reader = new FileReader();
 
-  const splitImages = await new Promise<HTMLCanvasElement[]>(
-    (resolve, reject) => {
-      if (uploadedImageState.file instanceof File) {
-        reader.onload = (e: ProgressEvent<FileReader>) => {
-          uploadImage(e.target?.result).then(resolve).catch(reject);
-        };
+  const splitImages = await new Promise<ImageData[]>((resolve, reject) => {
+    if (uploadedImageState.file instanceof File) {
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        uploadImage(e.target?.result).then(resolve).catch(reject);
+      };
 
-        if (!uploadedImageState.file) {
-          reject(new Error("File not found while reading file"));
-          return;
-        }
-        reader.readAsDataURL(uploadedImageState.file);
+      if (!uploadedImageState.file) {
+        reject(new Error("File not found while reading file"));
         return;
       }
-
-      uploadImage(uploadedImageState.file).then(resolve).catch(reject);
+      reader.readAsDataURL(uploadedImageState.file);
+      return;
     }
-  );
+
+    uploadImage(uploadedImageState.file).then(resolve).catch(reject);
+  });
 
   return splitImages;
 }
@@ -168,15 +183,16 @@ export async function downloadSplitImage({
     throw new Error("No split images found");
   }
 
-  splitImages.forEach((canvas, index) => {
-    const imgDataURL = canvas.toDataURL("image/png");
-    const imgData = imgDataURL.split(",")[1];
+  splitImages.forEach((imageData, index) => {
+    const imgData = imageData.data.buffer;
 
-    if (!imgData) {
+    const data = new Uint8Array(imgData);
+
+    if (!data) {
       throw new Error("Invalid image data");
     }
 
-    zip.file(`${outputName}_${index + 1}.png`, imgData, {
+    zip.file(`${outputName}_${index + 1}.png`, data, {
       base64: true,
     });
   });

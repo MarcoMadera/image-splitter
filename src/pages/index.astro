@@ -42,7 +42,7 @@ const images = await getImages();
         throw new Error("Element not found");
       }
 
-      let splitImages: HTMLCanvasElement[] = [];
+      let splitImages: ImageData[] = [];
 
       const uploadedImageStateHandler = {
         set: <T extends keyof IUploadedImageState>(

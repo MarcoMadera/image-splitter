@@ -4,6 +4,14 @@ interface IHexToRgb {
   b: number;
 }
 
-export function rgbToHex({ r, g, b }: IHexToRgb): string {
-  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+export function rgbToHex(color: IHexToRgb | null): string | null {
+  if (!color) {
+    return null;
+  }
+  return (
+    "#" +
+    ((1 << 24) + (color.r << 16) + (color.g << 8) + color.b)
+      .toString(16)
+      .slice(1)
+  );
 }

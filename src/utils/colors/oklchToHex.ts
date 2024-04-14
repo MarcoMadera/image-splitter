@@ -17,5 +17,8 @@ export function oklchToHex(oklch: string): string {
   if (!r || !g || !b) return oklch;
 
   const newColor = rgbToHex({ r, g, b });
+
+  if (!newColor) return oklch;
+
   return newColor;
 }
