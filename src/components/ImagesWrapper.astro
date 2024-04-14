@@ -27,7 +27,7 @@ const title = Astro.props.title;
             class="group relative h-56 rounded shadow transition hover:z-10 hover:scale-125 hover:shadow-lg motion-reduce:hover:scale-105"
           >
             <Image
-              src={image.urls.small}
+              src={image.urls.small_s3 ?? image.urls.small}
               alt={image.alt_description}
               class="h-full object-cover"
               width={180}

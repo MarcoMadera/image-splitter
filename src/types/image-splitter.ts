@@ -19,5 +19,5 @@ export interface IDrawGrid {
 
 export interface IDownloadSplitImage {
   outputName: string;
-  splitImages: HTMLCanvasElement[];
+  splitImages: ImageData[];
 }
