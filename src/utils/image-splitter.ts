@@ -184,15 +184,22 @@ export async function downloadSplitImage({
   }
 
   splitImages.forEach((imageData, index) => {
-    const imgData = imageData.data.buffer;
+    const canvas = document.createElement("canvas");
+    canvas.width = imageData.width;
+    canvas.height = imageData.height;
+    const ctx = canvas.getContext("2d");
 
-    const data = new Uint8Array(imgData);
+    ctx?.putImageData(imageData, 0, 0);
 
-    if (!data) {
+    const imgDataURL = canvas.toDataURL("image/png");
+
+    const imgData = imgDataURL.split(",")[1];
+
+    if (!imgData) {
       throw new Error("Invalid image data");
     }
 
-    zip.file(`${outputName}_${index + 1}.png`, data, {
+    zip.file(`${outputName}_${index + 1}.png`, imgData, {
       base64: true,
     });
   });
