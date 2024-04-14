@@ -2,7 +2,7 @@ import JSZip from "jszip";
 import type {
   IDownloadSplitImage,
   IDrawGrid,
-  IGetSplitImages,
+  IGetSplittedImages,
 } from "types/image-splitter";
 
 import { getContrastingColor, getDominantColor, rgbToHex } from "./colors";
@@ -12,8 +12,12 @@ import {
   GRID_LINE_WIDTH_SCALE,
 } from "./constants";
 
-export function drawGrid({ gridX, gridY, img }: IDrawGrid): ImageData[] {
-  const imageDataArray: ImageData[] = [];
+export async function getSplittedFiles({
+  gridX,
+  gridY,
+  img,
+}: IDrawGrid): Promise<File[]> {
+  const files: File[] = [];
   const { width, height } = img;
 
   const cellWidth = width / gridX;
@@ -36,16 +40,21 @@ export function drawGrid({ gridX, gridY, img }: IDrawGrid): ImageData[] {
         cellHeight
       );
 
-      const imageData = ctx.getImageData(0, 0, cellWidth, cellHeight);
-      imageDataArray.push(imageData);
+      const blob = await offScreenCanvas.convertToBlob();
+      const fileName = `image.png`;
+      const file = new File([blob], fileName, {
+        type: "image/png",
+      });
+
+      files.push(file);
     }
   }
 
-  return imageDataArray;
+  return files;
 }
 
-function arrayBufferToBase64PNG(result: ArrayBuffer) {
-  const uInt8Array = new Uint8Array(result);
+function arrayBufferToBase64PNG(arrayBuffer: ArrayBuffer) {
+  const uInt8Array = new Uint8Array(arrayBuffer);
   const data = uInt8Array.reduce((d, byte) => {
     return d + String.fromCharCode(byte);
   }, "");
@@ -61,12 +70,12 @@ function getBase64PNG(result?: FileReader["result"]): string {
   return base64PNG;
 }
 
-export async function getSplitImages({
+export async function getSplittedImages({
   gridX,
   gridY,
   uploadedImageState,
   target,
-}: IGetSplitImages): Promise<ImageData[]> {
+}: IGetSplittedImages): Promise<File[]> {
   if (!uploadedImageState.file) {
     throw new Error("File not provided");
   }
@@ -84,10 +93,12 @@ export async function getSplitImages({
     throw new Error("Target not found");
   }
 
-  imageTarget.innerHTML = "";
+  if (imageTarget.firstChild) {
+    imageTarget.removeChild(imageTarget.firstChild);
+  }
 
   const uploadImage = (result?: FileReader["result"]) =>
-    new Promise<ImageData[]>((resolve, reject) => {
+    new Promise<File[]>((resolve, reject) => {
       const base64PNG = getBase64PNG(result);
       if (!base64PNG) {
         reject(new Error("Invalid file type"));
@@ -142,18 +153,17 @@ export async function getSplitImages({
           ctx.stroke();
         }
 
-        imageTarget.innerHTML = "";
-        imageTarget.appendChild(canvas);
+        imageTarget.replaceChildren(canvas);
       };
 
       img.onload = function () {
-        resolve(drawGrid({ img, gridX, gridY }));
+        resolve(getSplittedFiles({ img, gridX, gridY }));
       };
     });
 
   const reader = new FileReader();
 
-  const splitImages = await new Promise<ImageData[]>((resolve, reject) => {
+  const splittedImages = await new Promise<File[]>((resolve, reject) => {
     if (uploadedImageState.file instanceof File) {
       reader.onload = (e: ProgressEvent<FileReader>) => {
         uploadImage(e.target?.result).then(resolve).catch(reject);
@@ -170,29 +180,23 @@ export async function getSplitImages({
     uploadImage(uploadedImageState.file).then(resolve).catch(reject);
   });
 
-  return splitImages;
+  return splittedImages;
 }
 
 export async function downloadSplitImage({
   outputName,
-  splitImages,
+  splittedImages,
 }: IDownloadSplitImage): Promise<void> {
   const zip = new JSZip();
 
-  if (!splitImages.length) {
+  if (!splittedImages.length) {
     throw new Error("No split images found");
   }
 
-  splitImages.forEach((imageData, index) => {
-    const imgData = imageData.data.buffer;
+  splittedImages.forEach((file, index) => {
+    const fileName = `${outputName}_${index + 1}.png`;
 
-    const data = new Uint8Array(imgData);
-
-    if (!data) {
-      throw new Error("Invalid image data");
-    }
-
-    zip.file(`${outputName}_${index + 1}.png`, data, {
+    zip.file(fileName, file, {
       base64: true,
     });
   });
