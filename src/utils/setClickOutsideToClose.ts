@@ -4,17 +4,13 @@ export function setClickOutsideToClose(
 ): void {
   document.addEventListener("click", (event) => {
     const panelElement = document.getElementById(panel);
-    const panelElementEventTarget = event.target;
+    const isClickInsidePanel = panelElement?.contains(event.target as Node);
+    const isClickInsideIgnoredElement = idsToIgnore.some((id) =>
+      document.getElementById(id)?.contains(event.target as Node)
+    );
 
-    for (let id of idsToIgnore) {
-      const element = document.getElementById(id);
-      if (
-        element == panelElement ||
-        element?.contains(panelElementEventTarget as Node)
-      ) {
-        return;
-      }
+    if (!isClickInsidePanel && !isClickInsideIgnoredElement) {
+      panelElement?.classList.add("closed");
     }
-    panelElement?.classList.add("closed");
   });
 }

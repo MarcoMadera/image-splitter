@@ -1,8 +1,8 @@
 // import react from "@astrojs/react";
 import tailwind from "@astrojs/tailwind";
-import vercel from "@astrojs/vercel/static";
+import vercel from "@astrojs/vercel/serverless";
 import swup from "@swup/astro";
-import { defineConfig, passthroughImageService } from "astro/config";
+import { defineConfig } from "astro/config";
 import icon from "astro-icon";
 
 import { oklchToHex } from "./src/utils/colors/oklchToHex";
@@ -31,6 +31,7 @@ export default defineConfig({
     }),
   ],
   adapter: vercel(),
+  output: "server",
   vite: {
     css: {
       preprocessorOptions: {

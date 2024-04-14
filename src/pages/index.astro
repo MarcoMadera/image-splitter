@@ -38,7 +38,16 @@ const images = await getImages();
       const imageInput = document.getElementById("imageInput");
       const downloadButton = document.getElementById("downloadButton");
       const imageContainer = document.getElementById("imageContainer");
-      if (!gridXInput || !gridYInput || !imageInput || !downloadButton) {
+      const imageDropContainer = document.getElementById("imageDropContainer");
+      const clearImageButton = document.getElementById("clear-image-btn");
+      if (
+        !gridXInput ||
+        !gridYInput ||
+        !imageInput ||
+        !downloadButton ||
+        !imageDropContainer ||
+        !clearImageButton
+      ) {
         throw new Error("Element not found");
       }
 
@@ -57,14 +66,23 @@ const images = await getImages();
             if (file instanceof File) {
               state.name = removeFileExtension(file?.name);
               state.extension = getFileNameExtension(file?.name);
-            } else {
+              imageDropContainer?.classList.add("hidden");
+              imageContainer?.classList.remove("hidden");
+              clearImageButton?.classList.remove("invisible");
+            } else if (file) {
               state.name = "image";
               state.extension = "";
+              imageDropContainer?.classList.add("hidden");
+              imageContainer?.classList.remove("hidden");
+              clearImageButton?.classList.remove("invisible");
             }
 
             if (!file && imageContainer) {
               imageContainer.innerHTML = "";
               state.extension = "";
+              imageDropContainer?.classList.remove("hidden");
+              imageContainer?.classList.add("hidden");
+              clearImageButton?.classList.add("invisible");
             }
 
             toggleDownloadButton(!file);
@@ -148,6 +166,33 @@ const images = await getImages();
           });
         }
       }
+
+      imageDropContainer.addEventListener("drop", (e) => {
+        e.preventDefault();
+
+        const files = e.dataTransfer?.files;
+
+        if (!files) return;
+
+        if (files.length > 1) {
+          console.warn("Only one image can be uploaded at a time");
+        }
+
+        const file = files[0];
+
+        if (file) {
+          uploadedImageState.file = file;
+          handleChangeImage(new Event("change"));
+          // TODO: Add loading animation
+
+          // TODO: Remove this and only scroll when upload is done
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      });
+
+      clearImageButton?.addEventListener("click", () => {
+        uploadedImageState.file = null;
+      });
 
       gridXInput.addEventListener("change", handleChangeImage);
       gridYInput.addEventListener("change", handleChangeImage);
