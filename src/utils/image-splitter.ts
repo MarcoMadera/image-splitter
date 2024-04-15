@@ -114,6 +114,14 @@ export async function getSplittedImages({
       originalImage.src = base64PNG;
       originalImage.crossOrigin = "Anonymous";
 
+      originalImage.onerror = function () {
+        reject(new Error("Invalid file"));
+      };
+
+      img.onerror = function () {
+        reject(new Error("Invalid file"));
+      };
+
       originalImage.onload = function () {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
