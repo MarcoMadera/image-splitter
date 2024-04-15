@@ -4,9 +4,14 @@ import { callApi } from "./callApi";
 import { handleJsonResponse } from "./handleJsonResponse";
 
 export async function getImages(): Promise<Images | null> {
-  const response = await callApi({ endpoint: "/images", method: "GET" });
+  try {
+    const response = await callApi({ endpoint: "/images", method: "GET" });
 
-  const data = handleJsonResponse<Images>(response);
+    const data = await handleJsonResponse<Images>(response);
 
-  return data;
+    return data;
+  } catch (error) {
+    console.error("Error getting images:", error);
+    return null;
+  }
 }
