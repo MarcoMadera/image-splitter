@@ -1,4 +1,5 @@
 ---
+import { Icon } from "astro-icon/components";
 import { Image } from "astro:assets";
 import type { Images } from "types/imagesResponse";
 
@@ -11,7 +12,7 @@ const images = Astro.props.images;
 const title = Astro.props.title;
 ---
 
-<div class="container mx-auto px-4 py-4">
+<div class="container mx-auto px-4 py-4 min-h-[39rem] relative">
   <h2 class="dark:text-neutral-50 text-2xl font-bold mb-1">
     {title}
   </h2>
@@ -63,6 +64,16 @@ const title = Astro.props.title;
       })
     }
   </div>
+  {
+    !images?.length && (
+      <div class="flex flex-col items-center justify-center h-full absolute translate-y-1/2 top-[-50%] translate-x-[-50%] left-[50%] text-[var(--primary)] w-full max-w-[calc(100% - 0.25rem)]">
+        <Icon name="material-symbols:chat-error-outline-rounded" size={80} />
+        <p class="text-center text-lg text-neutral-400">
+          There was a problem loading the images
+        </p>
+      </div>
+    )
+  }
 </div>
 
 <script>
