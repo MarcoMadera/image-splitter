@@ -24,6 +24,7 @@ const title = Astro.props.title;
         return (
           <button
             id={image.id}
+            draggable="true"
             class="group relative h-56 rounded shadow transition hover:z-10 hover:scale-125 hover:shadow-lg motion-reduce:hover:scale-105"
           >
             <Image
@@ -63,3 +64,19 @@ const title = Astro.props.title;
     }
   </div>
 </div>
+
+<script>
+  import { onSwup } from "utils";
+
+  onSwup("content:replace", () => {
+    const images = document.querySelectorAll(
+      "#explore-image-container button"
+    ) as NodeListOf<HTMLButtonElement>;
+    images.forEach((img: HTMLButtonElement | null) => {
+      if (!img) return;
+      img.addEventListener("dragstart", (event) => {
+        event.dataTransfer?.setData("text/plain", img.id);
+      });
+    });
+  });
+</script>
