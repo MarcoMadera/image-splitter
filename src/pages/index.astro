@@ -169,6 +169,26 @@ const images = await getImages();
 
       imageDropContainer.addEventListener("drop", (e) => {
         e.preventDefault();
+        const imageId = e.dataTransfer?.getData("text");
+
+        if (imageId) {
+          const images: Images | null = JSON.parse(
+            localStorage.getItem("images") ?? "[]"
+          );
+
+          const image = images?.find((img) => img.id === imageId);
+
+          if (image) {
+            const url = new URL(image.urls.regular);
+
+            uploadedImageState.file = url.href;
+
+            handleChangeImage(new Event("change"));
+            return;
+          } else {
+            console.error("Image not found");
+          }
+        }
 
         const files = e.dataTransfer?.files;
 
