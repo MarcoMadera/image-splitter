@@ -116,12 +116,29 @@ const images = await getImages();
       }
 
       async function handleChangeImage(e: Event) {
-        const gridX = Number(gridXInput.value);
-        const gridY = Number(gridYInput.value);
-        uploadedImageState.file =
-          (e.target as HTMLInputElement)?.files?.[0] ?? uploadedImageState.file;
+        const gridXInput = document.getElementById(
+          "gridX"
+        ) as HTMLInputElement | null;
+        const gridYInput = document.getElementById(
+          "gridY"
+        ) as HTMLInputElement | null;
 
         try {
+          if (!gridXInput || !gridYInput) {
+            throw new Error("Element not found");
+          }
+
+          const gridX = Number(gridXInput.value);
+          const gridY = Number(gridYInput.value);
+          uploadedImageState.name = `${uploadedImageState.name}_grid_${gridX}x${gridY}`;
+          uploadedImageState.file =
+            (e.target as HTMLInputElement)?.files?.[0] ??
+            uploadedImageState.file;
+
+          if (gridX <= 0 || gridY <= 0) {
+            throw new Error("Grid size cannot be 0");
+          }
+
           splittedImages = await getSplittedImages({
             uploadedImageState,
             gridX,
@@ -136,15 +153,9 @@ const images = await getImages();
       }
 
       async function handleDownload() {
-        const gridX = Number(gridXInput.value);
-        const gridY = Number(gridYInput.value);
-        const outputName = `${uploadedImageState.name}_grid_${gridX}x${gridY}`;
+        const outputName = uploadedImageState.name;
 
         try {
-          if (gridX <= 0 || gridY <= 0) {
-            throw new Error("Grid size cannot be 0");
-          }
-
           await downloadSplitImage({ outputName, splittedImages });
         } catch (error) {
           // TODO: Implement notification

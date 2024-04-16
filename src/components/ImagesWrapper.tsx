@@ -80,7 +80,7 @@ function ImagesWrapper({
                 />
                 <div className="absolute left-0 top-0 flex size-full flex-col items-start justify-end bg-black/25 p-2 opacity-0 transition-opacity group-hover:opacity-100">
                   <p
-                    className="mb-2 line-clamp-2 justify-start text-ellipsis text-left text-xs text-white"
+                    className="mb-2 line-clamp-2 w-full justify-start text-ellipsis text-left text-xs text-white"
                     title={image.description ?? ""}
                   >
                     {image.description}
