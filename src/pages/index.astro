@@ -7,7 +7,6 @@ import SplitterDragAndDrop from "components/SplitterDragAndDrop.astro";
 import LoadingError from "components/LoadingError.astro";
 import { Icon } from "astro-icon/components";
 
-export const prerender = true;
 Astro.response.headers.set("Vercel-CDN-Cache-Control", "max-age=300");
 Astro.response.headers.set("CDN-Cache-Control", "max-age=60");
 
