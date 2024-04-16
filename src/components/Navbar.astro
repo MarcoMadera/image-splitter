@@ -32,7 +32,7 @@ const LinkPresets: { [key in LinkPreset]: NavBarLink } = {
   },
 };
 
-let links: NavBarLink[] = navBarConfig.links.map(
+const links: NavBarLink[] = navBarConfig.links.map(
   (item: NavBarLink | LinkPreset): NavBarLink => {
     if (typeof item === "number") {
       return LinkPresets[item];
@@ -55,6 +55,7 @@ let links: NavBarLink[] = navBarConfig.links.map(
     <a
       href="/"
       class="btn-plain h-[3.25rem] px-5 font-bold rounded-lg active:scale-95"
+      translate="no"
     >
       <div class="flex flex-row text-[var(--primary)] items-center text-md">
         <Icon
@@ -132,15 +133,33 @@ let links: NavBarLink[] = navBarConfig.links.map(
   }
 
   function loadButtonScript() {
-    let switchBtn = document.getElementById("scheme-switch");
+    const switchBtn = document.getElementById("scheme-switch");
     switchBtn?.addEventListener("click", function () {
       switchTheme();
     });
 
-    let menuBtn = document.getElementById("nav-menu-switch");
+    const menuBtn = document.getElementById("nav-menu-switch");
     menuBtn?.addEventListener("click", function () {
-      let menuPanel = document.getElementById("nav-menu-panel");
+      const menuPanel = document.getElementById("nav-menu-panel");
       menuPanel?.classList.toggle("closed");
+
+      const menuSwitch = document.getElementById("nav-menu-switch");
+      menuSwitch?.setAttribute(
+        "aria-expanded",
+        menuPanel?.classList.contains("closed") ? "false" : "true"
+      );
+
+      if (!menuPanel?.classList.contains("closed")) {
+        const firstLink = menuPanel?.querySelector("a");
+        firstLink?.focus();
+      }
+
+      menuPanel?.addEventListener("focusout", function (event) {
+        if (!menuPanel.contains(event.relatedTarget as Node)) {
+          menuPanel.classList.add("closed");
+          menuSwitch?.setAttribute("aria-expanded", "false");
+        }
+      });
     });
   }
 

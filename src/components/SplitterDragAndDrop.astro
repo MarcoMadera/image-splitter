@@ -11,7 +11,8 @@ import { Icon } from "astro-icon/components";
         >
           <div
             id="imageDropContainer"
-            class="btn-plain flex flex-col items-center justify-center min-h-[40rem] max-h-[40rem] h-[40rem] w-full border-2 border-dashed border-[var(--btn-regular-bg-hover)] rounded-lg"
+            class="btn-plain flex flex-col items-center justify-center min-h-[40rem] max-h-[40rem] h-[40rem] w-full border-2 border-dashed border-[var(--btn-regular-bg-hover)] rounded-lg focus:outline-none focus:border-[var(--hover-btn-bg-active)]"
+            tabindex="0"
           >
             <label
               for="imageInput"
@@ -35,6 +36,7 @@ import { Icon } from "astro-icon/components";
           </div>
         </div>
         <button
+          type="button"
           id="clear-image-btn"
           class="btn-regular invisible mt-1 tabbable px-2 py-1 cursor-pointer inline-flex items-center justify-center rounded-lg transition-[transform,background-color] duration-100 active:scale-105 disabled:!cursor-not-allowed disabled:bg-opacity-60 disabled:text-opacity-60"
           >Clear image</button
@@ -50,31 +52,38 @@ import { Icon } from "astro-icon/components";
       const imageDropContainer = document.getElementById(
         "imageDropContainer"
       ) as HTMLDivElement;
-      let backgroundColor = "";
-      let color = "";
+
       imageDropContainer.addEventListener("dragover", (e) => {
         e.preventDefault();
-        backgroundColor = imageDropContainer.style.backgroundColor;
-        color = imageDropContainer.style.color;
         imageDropContainer.style.backgroundColor = "var(--btn-plain-bg-hover)";
-        imageDropContainer.style.color = "var(--primary)";
 
-        imageDropContainer.classList.add(
-          "border-2",
-          "border-dashed",
-          "border-primary"
-        );
+        imageDropContainer.classList.add("!text-[var(--primary)]");
+        imageDropContainer.classList.add("!border-[var(--primary)]");
       });
 
       imageDropContainer.addEventListener("dragleave", (e) => {
         e.preventDefault();
-        imageDropContainer.classList.remove(
-          "border-2",
-          "border-dashed",
-          "border-primary"
-        );
-        imageDropContainer.style.backgroundColor = backgroundColor;
-        imageDropContainer.style.color = color;
+        imageDropContainer.style.backgroundColor = "";
+
+        imageDropContainer.classList.remove("!text-[var(--primary)]");
+        imageDropContainer.classList.remove("!border-[var(--primary)]");
+      });
+
+      imageDropContainer.addEventListener("drop", (e) => {
+        e.preventDefault();
+        imageDropContainer.style.backgroundColor = "";
+
+        imageDropContainer.classList.remove("!text-[var(--primary)]");
+        imageDropContainer.classList.remove("!border-[var(--primary)]");
+      });
+
+      imageDropContainer.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          const imageInput = document.getElementById(
+            "imageInput"
+          ) as HTMLInputElement;
+          imageInput.click();
+        }
       });
     });
   </script>
