@@ -2,8 +2,10 @@
 import { getImages } from "utils/apiCalls";
 import SplitterLayout from "layouts/Splitter.astro";
 import SplitterControls from "components/SplitterControls.astro";
-import ImagesWrapper from "components/ImagesWrapper.astro";
+import ImagesWrapper from "components/ImagesWrapper.tsx";
 import SplitterDragAndDrop from "components/SplitterDragAndDrop.astro";
+import LoadingError from "components/LoadingError.astro";
+import { Icon } from "astro-icon/components";
 
 const images = await getImages();
 ---
@@ -15,7 +17,11 @@ const images = await getImages();
     slot="after-main"
     images={images}
     title="Explore images for splitting"
-  />
+    client:load
+  >
+    <LoadingError>There was a problem loading the images</LoadingError>
+    <Icon slot="reload-icon" name="mage:reload" size={18} />
+  </ImagesWrapper>
 
   <script is:inline define:vars={{ images }} type="module">
     localStorage.setItem("images", JSON.stringify(images));

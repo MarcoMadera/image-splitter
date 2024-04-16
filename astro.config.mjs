@@ -1,4 +1,4 @@
-// import react from "@astrojs/react";
+import react from "@astrojs/react";
 import tailwind from "@astrojs/tailwind";
 import vercel from "@astrojs/vercel/serverless";
 import swup from "@swup/astro";
@@ -10,6 +10,7 @@ import { oklchToHex } from "./src/utils/colors/oklchToHex";
 // https://astro.build/config
 export default defineConfig({
   integrations: [
+    react(),
     tailwind(),
     swup({
       theme: false,
@@ -27,6 +28,7 @@ export default defineConfig({
         "fa6-brands": ["*"],
         "fa6-regular": ["*"],
         "fa6-solid": ["*"],
+        mage: ["reload"],
       },
     }),
   ],
