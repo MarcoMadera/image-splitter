@@ -1,0 +1,12 @@
+---
+import { Icon } from "astro-icon/components";
+---
+
+<div
+  class="flex size-full flex-col items-center justify-center text-[var(--primary)]"
+>
+  <Icon name="material-symbols:chat-error-outline-rounded" size={80} />
+  <p class="text-center">
+    <slot />
+  </p>
+</div>
