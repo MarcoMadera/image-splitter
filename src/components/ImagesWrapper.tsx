@@ -30,9 +30,8 @@ function ImagesWrapper({
       })
       .catch((err) => {
         console.error("Error getting images:", err);
-      });
-
-    setIsLoading(false);
+      })
+      .finally(() => setIsLoading(false));
   }
 
   return (
