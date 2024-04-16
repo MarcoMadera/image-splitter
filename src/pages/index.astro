@@ -106,7 +106,7 @@ const images = await getImages();
       };
 
       const uploadedImageState = new Proxy<IUploadedImageState>(
-        { file: null, name: "image", extension: "" },
+        { file: null, name: "image", extension: "", downloadName: "image" },
         uploadedImageStateHandler
       );
 
@@ -136,7 +136,7 @@ const images = await getImages();
           uploadedImageState.file =
             (e.target as HTMLInputElement)?.files?.[0] ??
             uploadedImageState.file;
-          uploadedImageState.name = `${uploadedImageState.name}_grid_${gridX}x${gridY}`;
+          uploadedImageState.downloadName = `${uploadedImageState.name}_grid_${gridX}x${gridY}`;
 
           if (gridX <= 0 || gridY <= 0) {
             throw new Error("Grid size cannot be 0");
@@ -156,7 +156,7 @@ const images = await getImages();
       }
 
       async function handleDownload() {
-        const outputName = uploadedImageState.name;
+        const outputName = uploadedImageState.downloadName;
 
         try {
           await downloadSplitImage({ outputName, splittedImages });
@@ -200,6 +200,7 @@ const images = await getImages();
               file: image.urls.regular,
               name: image.slug,
               extension: "",
+              downloadName: image.slug,
             });
             return;
           } else {
@@ -222,6 +223,7 @@ const images = await getImages();
             file,
             extension: "",
             name: file.name,
+            downloadName: file.name,
           });
         }
       });

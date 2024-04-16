@@ -18,6 +18,7 @@ function ImageCard({ image }: Readonly<IImageCard>): ReactElement {
             file: image.urls.regular,
             name: image.slug,
             extension: "",
+            downloadName: "",
           },
         })
       );

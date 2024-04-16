@@ -1,6 +1,7 @@
 export interface IUploadedImageState {
   file: File | string | null;
   name: string;
+  downloadName: string;
   extension: string;
 }
 
