@@ -7,6 +7,10 @@ import SplitterDragAndDrop from "components/SplitterDragAndDrop.astro";
 import LoadingError from "components/LoadingError.astro";
 import { Icon } from "astro-icon/components";
 
+export const prerender = true;
+Astro.response.headers.set("Vercel-CDN-Cache-Control", "max-age=300");
+Astro.response.headers.set("CDN-Cache-Control", "max-age=60");
+
 const images = await getImages();
 ---
 
@@ -78,7 +82,6 @@ const images = await getImages();
               imageContainer?.classList.remove("hidden");
               clearImageButton?.classList.remove("invisible");
             } else if (file) {
-              state.name = "image";
               state.extension = "";
               imageInput.value = "";
               imageDropContainer?.classList.add("hidden");
@@ -89,6 +92,7 @@ const images = await getImages();
             if (!file && imageContainer) {
               imageContainer.innerHTML = "";
               imageInput.value = "";
+              state.name = "image";
               state.extension = "";
               imageDropContainer?.classList.remove("hidden");
               imageContainer?.classList.add("hidden");
@@ -130,10 +134,10 @@ const images = await getImages();
 
           const gridX = Number(gridXInput.value);
           const gridY = Number(gridYInput.value);
-          uploadedImageState.name = `${uploadedImageState.name}_grid_${gridX}x${gridY}`;
           uploadedImageState.file =
             (e.target as HTMLInputElement)?.files?.[0] ??
             uploadedImageState.file;
+          uploadedImageState.name = `${uploadedImageState.name}_grid_${gridX}x${gridY}`;
 
           if (gridX <= 0 || gridY <= 0) {
             throw new Error("Grid size cannot be 0");
@@ -163,9 +167,10 @@ const images = await getImages();
         }
       }
 
-      function changeUploadedFile(file: IUploadedImageState["file"]) {
-        uploadedImageState.file = file;
-
+      function changeUploadedFile(imageState: IUploadedImageState) {
+        uploadedImageState.name = imageState.name;
+        uploadedImageState.file = imageState.file;
+        uploadedImageState.extension = imageState.extension;
         handleChangeImage(new Event("change"));
         // TODO: Add loading animation
 
@@ -176,7 +181,7 @@ const images = await getImages();
       function addButtonChangeListener() {
         window.addEventListener("updateImageState", (e) => {
           const event = e as CustomEvent<IUploadedImageState>;
-          changeUploadedFile(event.detail.file);
+          changeUploadedFile(event.detail);
         });
       }
 
@@ -192,7 +197,11 @@ const images = await getImages();
           const image = images?.find((img) => img.id === imageId);
 
           if (image) {
-            changeUploadedFile(image.urls.regular);
+            changeUploadedFile({
+              file: image.urls.regular,
+              name: image.slug,
+              extension: "",
+            });
             return;
           } else {
             console.error("Image not found");
@@ -210,7 +219,11 @@ const images = await getImages();
         const file = files[0];
 
         if (file) {
-          changeUploadedFile(file);
+          changeUploadedFile({
+            file,
+            extension: "",
+            name: file.name,
+          });
         }
       });
 
