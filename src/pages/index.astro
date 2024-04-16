@@ -163,20 +163,10 @@ const images = await getImages();
       }
 
       function addButtonChangeListener() {
-        const images: Images | null = JSON.parse(
-          localStorage.getItem("images") ?? "[]"
-        );
-
-        if (images) {
-          images.forEach((image) => {
-            const button = document.getElementById(image.id);
-            if (!button) return;
-
-            button.addEventListener("click", () => {
-              changeUploadedFile(image.urls.regular);
-            });
-          });
-        }
+        window.addEventListener("updateImageState", (e) => {
+          const event = e as CustomEvent<IUploadedImageState>;
+          changeUploadedFile(event.detail.file);
+        });
       }
 
       imageDropContainer.addEventListener("drop", (e) => {
