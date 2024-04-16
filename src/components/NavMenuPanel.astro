@@ -14,6 +14,7 @@ const links = Astro.props.links;
   class:list={[
     "float-panel closed absolute transition-all fixed right-4 px-2 py-2",
   ]}
+  aria-hidden="true"
 >
   {
     links.map((link) => (
@@ -23,6 +24,8 @@ const links = Astro.props.links;
             hover:bg-[var(--btn-plain-bg-hover)] active:bg-[var(--btn-plain-bg-active)] transition
         "
         target={link.external ? "_blank" : null}
+        rel={link.external ? "noopener noreferrer" : null}
+        tabindex="-1"
       >
         <div class="transition text-black/75 dark:text-white/75 font-bold group-hover:text-[var(--primary)] group-active:text-[var(--primary)]">
           {link.name}
@@ -52,4 +55,31 @@ const links = Astro.props.links;
     "nav-menu-panel",
     "nav-menu-switch",
   ]);
+
+  const navMenuLinks = document.querySelectorAll("#nav-menu-panel a");
+
+  navMenuLinks.forEach((link) => {
+    link.addEventListener("click", () => {
+      document.getElementById("nav-menu-panel")?.classList.add("closed");
+    });
+
+    link.addEventListener("keydown", (e) => {
+      const event = e as KeyboardEvent;
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        const nextLink = link.nextElementSibling as HTMLAnchorElement;
+        if (nextLink) {
+          nextLink.focus();
+        }
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        const prevLink = link.previousElementSibling as HTMLAnchorElement;
+        if (prevLink) {
+          prevLink.focus();
+        }
+      }
+    });
+  });
 </script>
