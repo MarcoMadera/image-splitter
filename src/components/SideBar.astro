@@ -3,7 +3,7 @@ const className = Astro.props.class;
 ---
 
 <div class="sidebar" class:list={[className, "w-full"]}>
-  <div class="flex flex-col w-full gap-4 mb-4">
+  <div class="flex flex-col w-full gap-4 mb-4 transition-fade">
     <div class="card-base py-2 px-2">
       <slot />
     </div>
