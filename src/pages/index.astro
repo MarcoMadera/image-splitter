@@ -119,6 +119,7 @@ const images = await getImages();
       }
 
       async function handleChangeImage(e: Event) {
+        splittedImages = [];
         const gridXInput = document.getElementById(
           "gridX"
         ) as HTMLInputElement | null;
@@ -138,10 +139,6 @@ const images = await getImages();
             uploadedImageState.file;
           uploadedImageState.downloadName = `${uploadedImageState.name}_grid_${gridX}x${gridY}`;
 
-          if (gridX <= 0 || gridY <= 0) {
-            throw new Error("Grid size cannot be 0");
-          }
-
           splittedImages = await getSplittedImages({
             uploadedImageState,
             gridX,
@@ -150,6 +147,18 @@ const images = await getImages();
           });
         } catch (error) {
           // TODO: Implement notification
+          if (error instanceof Error) {
+            if (error.message === "Grid size cannot be 0") {
+              console.error(error);
+              return;
+            }
+
+            if (error.message === "Grid size too small") {
+              console.error(error);
+              return;
+            }
+          }
+
           uploadedImageState.file = null;
           console.error(error);
         }
@@ -232,8 +241,8 @@ const images = await getImages();
         uploadedImageState.file = null;
       });
 
-      gridXInput.addEventListener("change", handleChangeImage);
-      gridYInput.addEventListener("change", handleChangeImage);
+      gridXInput.addEventListener("input", handleChangeImage);
+      gridYInput.addEventListener("input", handleChangeImage);
       imageInput?.addEventListener("change", handleChangeImage);
       downloadButton?.addEventListener("click", handleDownload);
       addButtonChangeListener();

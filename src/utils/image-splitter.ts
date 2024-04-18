@@ -129,8 +129,22 @@ export async function getSplittedImages({
         canvas.width = originalImage.width;
         canvas.height = originalImage.height;
         ctx.drawImage(originalImage, 0, 0);
+
+        if (gridX <= 0 || gridY <= 0) {
+          imageTarget.replaceChildren(canvas);
+          reject(new Error("Grid size cannot be 0"));
+          return;
+        }
+
         const cellWidth = originalImage.width / gridX;
         const cellHeight = originalImage.height / gridY;
+
+        if (cellWidth <= 1 || cellHeight <= 1) {
+          imageTarget.replaceChildren(canvas);
+          reject(new Error("Grid size too small"));
+          return;
+        }
+
         const imageData = ctx?.getImageData(
           0,
           0,
@@ -168,6 +182,14 @@ export async function getSplittedImages({
       };
 
       img.onload = function () {
+        const cellWidth = originalImage.width / gridX;
+        const cellHeight = originalImage.height / gridY;
+
+        if (cellWidth <= 1 || cellHeight <= 1) {
+          reject(new Error("Grid size too small"));
+          return;
+        }
+
         resolve(getSplittedFiles({ img, gridX, gridY }));
       };
     });
