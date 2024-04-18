@@ -94,10 +94,6 @@ export async function getSplittedImages({
     throw new Error("Target not found");
   }
 
-  if (imageTarget.firstChild) {
-    imageTarget.removeChild(imageTarget.firstChild);
-  }
-
   const uploadImage = (result?: FileReader["result"]) =>
     new Promise<File[]>((resolve, reject) => {
       const base64PNG = getBase64PNG(result);
