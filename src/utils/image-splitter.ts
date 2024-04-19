@@ -2,8 +2,9 @@ import JSZip from "jszip";
 import type {
   IDownloadSplitImage,
   IDrawGrid,
-  IGetSplittedImages,
+  IDrawImageWithGrid,
 } from "types/image-splitter";
+import { loadImage, readFileData } from "utils";
 
 import { getContrastingColor, getDominantColor, rgbToHex } from "./colors";
 import {
@@ -23,6 +24,10 @@ export async function getSplittedFiles({
 
   const cellWidth = width / gridX;
   const cellHeight = height / gridY;
+
+  if (cellWidth <= 1 || cellHeight <= 1) {
+    throw new Error("Grid size too small");
+  }
 
   for (let i = 0; i < gridX; i++) {
     for (let j = 0; j < gridY; j++) {
@@ -71,12 +76,12 @@ function getBase64PNG(result?: FileReader["result"]): string {
   return base64PNG;
 }
 
-export async function getSplittedImages({
+export async function drawImageWithGrid({
   gridX,
   gridY,
   uploadedImageState,
   target,
-}: IGetSplittedImages): Promise<File[]> {
+}: IDrawImageWithGrid): Promise<void> {
   if (!uploadedImageState.file) {
     throw new Error("File not provided");
   }
@@ -94,136 +99,78 @@ export async function getSplittedImages({
     throw new Error("Target not found");
   }
 
-  const uploadImage = (result?: FileReader["result"]) =>
-    new Promise<File[]>((resolve, reject) => {
-      const base64PNG = getBase64PNG(result);
-      if (!base64PNG) {
-        reject(new Error("Invalid file type"));
-        return;
-      }
+  const fileData = await readFileData(uploadedImageState.file);
+  const base64PNG = getBase64PNG(fileData);
+  const image = await loadImage(base64PNG);
 
-      const img = new Image();
-      const originalImage = new Image();
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  canvas.width = image.width;
+  canvas.height = image.height;
+  ctx.drawImage(image, 0, 0);
 
-      img.src = base64PNG;
-      img.crossOrigin = "Anonymous";
-      originalImage.src = base64PNG;
-      originalImage.crossOrigin = "Anonymous";
+  if (gridX <= 0 || gridY <= 0) {
+    throw new Error("Grid size cannot be 0");
+  }
 
-      originalImage.onerror = function () {
-        reject(new Error("Invalid file"));
-      };
+  const cellWidth = image.width / gridX;
+  const cellHeight = image.height / gridY;
 
-      img.onerror = function () {
-        reject(new Error("Invalid file"));
-      };
+  if (cellWidth <= 1 || cellHeight <= 1) {
+    throw new Error("Grid size too small");
+  }
 
-      originalImage.onload = function () {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-        canvas.width = originalImage.width;
-        canvas.height = originalImage.height;
-        ctx.drawImage(originalImage, 0, 0);
+  const imageData = ctx?.getImageData(0, 0, image.width, image.height);
+  const contrastColor = rgbToHex(
+    getContrastingColor(getDominantColor(imageData))
+  );
+  const lineWidth = Math.min(cellWidth, cellHeight) * GRID_LINE_WIDTH_SCALE;
+  const dashLength = Math.max(cellHeight, cellHeight) * GRID_LINE_DASH_SCALE;
+  ctx.setLineDash([dashLength, dashLength]);
 
-        if (gridX <= 0 || gridY <= 0) {
-          imageTarget.replaceChildren(canvas);
-          reject(new Error("Grid size cannot be 0"));
-          return;
-        }
+  ctx.lineWidth = lineWidth;
+  ctx.globalAlpha = GRID_LINE_TRANSPARENCY;
+  ctx.strokeStyle = contrastColor ?? "red";
 
-        const cellWidth = originalImage.width / gridX;
-        const cellHeight = originalImage.height / gridY;
+  for (let i = 1; i < gridX; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * cellWidth, 0);
+    ctx.lineTo(i * cellWidth, image.height);
+    ctx.stroke();
+  }
 
-        if (cellWidth <= 1 || cellHeight <= 1) {
-          imageTarget.replaceChildren(canvas);
-          reject(new Error("Grid size too small"));
-          return;
-        }
+  for (let i = 1; i < gridY; i++) {
+    ctx.beginPath();
+    ctx.moveTo(0, i * cellHeight);
+    ctx.lineTo(image.width, i * cellHeight);
+    ctx.stroke();
+  }
 
-        const imageData = ctx?.getImageData(
-          0,
-          0,
-          originalImage.width,
-          originalImage.height
-        );
-        const contrastColor = rgbToHex(
-          getContrastingColor(getDominantColor(imageData))
-        );
-        const lineWidth =
-          Math.min(cellWidth, cellHeight) * GRID_LINE_WIDTH_SCALE;
-        const dashLength =
-          Math.max(cellHeight, cellHeight) * GRID_LINE_DASH_SCALE;
-        ctx.setLineDash([dashLength, dashLength]);
-
-        ctx.lineWidth = lineWidth;
-        ctx.globalAlpha = GRID_LINE_TRANSPARENCY;
-        ctx.strokeStyle = contrastColor ?? "red";
-
-        for (let i = 1; i < gridX; i++) {
-          ctx.beginPath();
-          ctx.moveTo(i * cellWidth, 0);
-          ctx.lineTo(i * cellWidth, originalImage.height);
-          ctx.stroke();
-        }
-
-        for (let i = 1; i < gridY; i++) {
-          ctx.beginPath();
-          ctx.moveTo(0, i * cellHeight);
-          ctx.lineTo(originalImage.width, i * cellHeight);
-          ctx.stroke();
-        }
-
-        imageTarget.replaceChildren(canvas);
-      };
-
-      img.onload = function () {
-        const cellWidth = originalImage.width / gridX;
-        const cellHeight = originalImage.height / gridY;
-
-        if (cellWidth <= 1 || cellHeight <= 1) {
-          reject(new Error("Grid size too small"));
-          return;
-        }
-
-        resolve(getSplittedFiles({ img, gridX, gridY }));
-      };
-    });
-
-  const reader = new FileReader();
-
-  const splittedImages = await new Promise<File[]>((resolve, reject) => {
-    if (uploadedImageState.file instanceof File) {
-      reader.onload = (e: ProgressEvent<FileReader>) => {
-        uploadImage(e.target?.result).then(resolve).catch(reject);
-      };
-
-      if (!uploadedImageState.file) {
-        reject(new Error("File not found while reading file"));
-        return;
-      }
-      reader.readAsDataURL(uploadedImageState.file);
-      return;
-    }
-
-    uploadImage(uploadedImageState.file).then(resolve).catch(reject);
-  });
-
-  return splittedImages;
+  imageTarget.replaceChildren(canvas);
 }
 
 export async function downloadSplitImage({
-  outputName,
-  splittedImages,
+  gridX,
+  gridY,
+  uploadedImageState,
 }: IDownloadSplitImage): Promise<void> {
   const zip = new JSZip();
 
-  if (!splittedImages.length) {
-    throw new Error("No split images found");
+  if (gridX <= 0 || gridY <= 0) {
+    throw new Error("Grid size cannot be 0");
   }
 
+  const fileData = await readFileData(uploadedImageState.file);
+
+  const base64PNG = getBase64PNG(fileData);
+
+  const img = await loadImage(base64PNG);
+
+  const splittedImages = await getSplittedFiles({ img, gridX, gridY });
+
   splittedImages.forEach((file, index) => {
-    const fileName = `${outputName}_${index + 1}.png`;
+    const fileName = `${uploadedImageState.downloadName}_${index + 1}.png`;
 
     zip.file(fileName, file, {
       base64: true,
@@ -233,7 +180,7 @@ export async function downloadSplitImage({
   const content = await zip.generateAsync({ type: "blob" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(content);
-  link.download = `${outputName}.zip`;
+  link.download = `${uploadedImageState.downloadName}.zip`;
   document.body.appendChild(link);
   link.click();
 
