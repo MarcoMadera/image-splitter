@@ -32,7 +32,7 @@ const images = await getImages();
 
   <script>
     import {
-      getSplittedImages,
+      drawImageWithGrid,
       downloadSplitImage,
       removeFileExtension,
       getFileNameExtension,
@@ -61,8 +61,6 @@ const images = await getImages();
       ) {
         throw new Error("Element not found");
       }
-
-      let splittedImages: File[] = [];
 
       const uploadedImageStateHandler = {
         set: <T extends keyof IUploadedImageState>(
@@ -119,7 +117,6 @@ const images = await getImages();
       }
 
       async function handleChangeImage(e: Event) {
-        splittedImages = [];
         const gridXInput = document.getElementById(
           "gridX"
         ) as HTMLInputElement | null;
@@ -139,7 +136,7 @@ const images = await getImages();
             uploadedImageState.file;
           uploadedImageState.downloadName = `${uploadedImageState.name}_grid_${gridX}x${gridY}`;
 
-          splittedImages = await getSplittedImages({
+          await drawImageWithGrid({
             uploadedImageState,
             gridX,
             gridY,
@@ -165,10 +162,19 @@ const images = await getImages();
       }
 
       async function handleDownload() {
-        const outputName = uploadedImageState.downloadName;
-
         try {
-          await downloadSplitImage({ outputName, splittedImages });
+          if (!gridXInput || !gridYInput) {
+            throw new Error("Element not found");
+          }
+
+          const gridX = Number(gridXInput.value);
+          const gridY = Number(gridYInput.value);
+
+          await downloadSplitImage({
+            gridX,
+            gridY,
+            uploadedImageState,
+          });
         } catch (error) {
           // TODO: Implement notification
           console.error(error);
