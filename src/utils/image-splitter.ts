@@ -111,6 +111,7 @@ export async function drawImageWithGrid({
   ctx.drawImage(image, 0, 0);
 
   if (gridX <= 0 || gridY <= 0) {
+    imageTarget.replaceChildren(canvas);
     throw new Error("Grid size cannot be 0");
   }
 
@@ -118,6 +119,7 @@ export async function drawImageWithGrid({
   const cellHeight = image.height / gridY;
 
   if (cellWidth <= 1 || cellHeight <= 1) {
+    imageTarget.replaceChildren(canvas);
     throw new Error("Grid size too small");
   }
 
