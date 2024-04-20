@@ -29,32 +29,32 @@ export async function getSplittedFiles({
     throw new Error("Grid size too small");
   }
 
-  for (let i = 0; i < gridX; i++) {
-    for (let j = 0; j < gridY; j++) {
-      const offScreenCanvas = new OffscreenCanvas(cellWidth, cellHeight);
-      const ctx = offScreenCanvas.getContext("2d");
-      if (!ctx) return [];
-      ctx.drawImage(
-        bitmap,
-        i * cellWidth,
-        j * cellHeight,
-        cellWidth,
-        cellHeight,
-        0,
-        0,
-        cellWidth,
-        cellHeight
-      );
+  const offScreenCanvas = new OffscreenCanvas(cellWidth, cellHeight);
+  const ctx = offScreenCanvas.getContext("2d");
+  if (!ctx) return [];
 
-      const blob = await offScreenCanvas.convertToBlob();
-      const fileName = `image.png`;
-      const file = new File([blob], fileName, {
-        type: "image/png",
-      });
-
+  const promises = Array.from({ length: gridX * gridY }, (_, i) => {
+    const x = i % gridX;
+    const y = Math.floor(i / gridX);
+    ctx.drawImage(
+      bitmap,
+      x * cellWidth,
+      y * cellHeight,
+      cellWidth,
+      cellHeight,
+      0,
+      0,
+      cellWidth,
+      cellHeight
+    );
+    return offScreenCanvas.convertToBlob().then((b) => {
+      const fileName = `image_${x}_${y}.png`;
+      const file = new File([b], fileName, { type: "image/png" });
       files.push(file);
-    }
-  }
+    });
+  });
+
+  await Promise.all(promises);
 
   return files;
 }
@@ -74,6 +74,41 @@ function getBase64PNG(result?: FileReader["result"]): string {
   const base64PNG = isArrayBuffer ? arrayBufferToBase64PNG(result) : result;
 
   return base64PNG;
+}
+
+let cachedPaths = new Map<string, Path2D>();
+
+export function clearPathCache(): void {
+  cachedPaths = new Map();
+}
+
+function getCachedPath(
+  gridX: number,
+  gridY: number,
+  width: number,
+  height: number
+): Path2D {
+  const cacheKey = `${gridX},${gridY},${width},${height}`;
+  if (!cachedPaths.has(cacheKey)) {
+    const path = new Path2D();
+    const cellWidth = width / gridX;
+    const cellHeight = height / gridY;
+
+    for (let i = 1; i <= Math.max(gridX, gridY); i++) {
+      if (i < gridX) {
+        path.moveTo(i * cellWidth, 0);
+        path.lineTo(i * cellWidth, height);
+      }
+      if (i < gridY) {
+        path.moveTo(0, i * cellHeight);
+        path.lineTo(width, i * cellHeight);
+      }
+    }
+
+    cachedPaths.set(cacheKey, path);
+  }
+
+  return cachedPaths.get(cacheKey) as Path2D;
 }
 
 export async function drawImageWithGrid({
@@ -135,19 +170,8 @@ export async function drawImageWithGrid({
   ctx.globalAlpha = GRID_LINE_TRANSPARENCY;
   ctx.strokeStyle = contrastColor ?? "red";
 
-  for (let i = 1; i < gridX; i++) {
-    ctx.beginPath();
-    ctx.moveTo(i * cellWidth, 0);
-    ctx.lineTo(i * cellWidth, image.height);
-    ctx.stroke();
-  }
-
-  for (let i = 1; i < gridY; i++) {
-    ctx.beginPath();
-    ctx.moveTo(0, i * cellHeight);
-    ctx.lineTo(image.width, i * cellHeight);
-    ctx.stroke();
-  }
+  const cachedPath = getCachedPath(gridX, gridY, image.width, image.height);
+  ctx.stroke(cachedPath);
 
   imageTarget.replaceChildren(canvas);
 }
