@@ -3,6 +3,7 @@ import type {
   IDownloadSplitImage,
   IDrawGrid,
   IDrawImageWithGrid,
+  IUploadedImageState,
 } from "types/image-splitter";
 import { loadImage, readFileData } from "utils";
 
@@ -78,7 +79,7 @@ function getBase64PNG(result?: FileReader["result"]): string {
 
 let cachedPaths = new Map<string, Path2D>();
 
-export function clearPathCache(): void {
+function clearPathCache(): void {
   cachedPaths = new Map();
 }
 
@@ -111,6 +112,28 @@ function getCachedPath(
   return cachedPaths.get(cacheKey) as Path2D;
 }
 
+let cachedImages = new Map<string, HTMLImageElement>();
+
+function clearImageCache(): void {
+  cachedImages = new Map();
+}
+
+export function clearGridImageCache(): void {
+  clearPathCache();
+  clearImageCache();
+}
+
+async function getCacheFileData(uploadedImageState: IUploadedImageState) {
+  if (!cachedImages.has(uploadedImageState.name)) {
+    const fileData = await readFileData(uploadedImageState.file);
+    const base64PNG = getBase64PNG(fileData);
+    const image = await loadImage(base64PNG);
+    cachedImages.set(uploadedImageState.name, image);
+  }
+
+  return cachedImages.get(uploadedImageState.name) as HTMLImageElement;
+}
+
 export async function drawImageWithGrid({
   gridX,
   gridY,
@@ -133,11 +156,7 @@ export async function drawImageWithGrid({
   if (!imageTarget) {
     throw new Error("Target not found");
   }
-
-  const fileData = await readFileData(uploadedImageState.file);
-  const base64PNG = getBase64PNG(fileData);
-  const image = await loadImage(base64PNG);
-
+  const image = await getCacheFileData(uploadedImageState);
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -169,6 +188,7 @@ export async function drawImageWithGrid({
   ctx.lineWidth = lineWidth;
   ctx.globalAlpha = GRID_LINE_TRANSPARENCY;
   ctx.strokeStyle = contrastColor ?? "red";
+  ctx.globalCompositeOperation = "source-over";
 
   const cachedPath = getCachedPath(gridX, gridY, image.width, image.height);
   ctx.stroke(cachedPath);

@@ -36,7 +36,7 @@ const images = await getImages();
       downloadSplitImage,
       removeFileExtension,
       getFileNameExtension,
-      clearPathCache,
+      clearGridImageCache,
     } from "utils/image-splitter";
     import type { IUploadedImageState } from "types/image-splitter";
     import type { Images } from "types/imagesResponse";
@@ -73,7 +73,7 @@ const images = await getImages();
 
           if (prop === "file") {
             const file = value;
-            clearPathCache();
+            clearGridImageCache();
             if (file instanceof File) {
               state.name = removeFileExtension(file?.name);
               state.extension = getFileNameExtension(file?.name);
