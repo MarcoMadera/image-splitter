@@ -36,6 +36,7 @@ const images = await getImages();
       downloadSplitImage,
       removeFileExtension,
       getFileNameExtension,
+      clearPathCache,
     } from "utils/image-splitter";
     import type { IUploadedImageState } from "types/image-splitter";
     import type { Images } from "types/imagesResponse";
@@ -72,6 +73,7 @@ const images = await getImages();
 
           if (prop === "file") {
             const file = value;
+            clearPathCache();
             if (file instanceof File) {
               state.name = removeFileExtension(file?.name);
               state.extension = getFileNameExtension(file?.name);
@@ -131,9 +133,10 @@ const images = await getImages();
 
           const gridX = Number(gridXInput.value);
           const gridY = Number(gridYInput.value);
-          uploadedImageState.file =
-            (e.target as HTMLInputElement)?.files?.[0] ??
-            uploadedImageState.file;
+          if ((e.target as HTMLInputElement)?.files?.[0]) {
+            uploadedImageState.file = (e.target as HTMLInputElement)
+              ?.files?.[0] as File;
+          }
           uploadedImageState.downloadName = `${uploadedImageState.name}_grid_${gridX}x${gridY}`;
 
           await drawImageWithGrid({
@@ -207,9 +210,7 @@ const images = await getImages();
           const images: Images | null = JSON.parse(
             localStorage.getItem("images") ?? "[]"
           );
-
           const image = images?.find((img) => img.id === imageId);
-
           if (image) {
             changeUploadedFile({
               file: image.urls.regular,
