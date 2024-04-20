@@ -1,8 +1,8 @@
 import JSZip from "jszip";
 import type {
   IDownloadSplitImage,
-  IDrawGrid,
   IDrawImageWithGrid,
+  ISplitImageAndZip,
   IUploadedImageState,
 } from "types/image-splitter";
 import { loadImage, readFileData } from "utils";
@@ -14,11 +14,12 @@ import {
   GRID_LINE_WIDTH_SCALE,
 } from "./constants";
 
-export async function getSplittedFiles({
+export async function splitImageAndZip({
   gridX,
   gridY,
   img,
-}: IDrawGrid): Promise<Blob> {
+  fileName,
+}: ISplitImageAndZip): Promise<Blob> {
   const zip = new JSZip();
   const bitmap = await createImageBitmap(img);
   const { width, height } = bitmap;
@@ -51,10 +52,11 @@ export async function getSplittedFiles({
       cellWidth,
       cellHeight
     );
-    return offScreenCanvas.convertToBlob().then((b) => {
-      const fileName = `image_${gridX}_${gridX}_${x}_${y}.png`;
-      const file = new File([b], fileName, { type: "image/png" });
-      zip.file(fileName, file, {
+
+    return offScreenCanvas.convertToBlob().then((blob) => {
+      const resultFileName = `${fileName}_${gridX}x${gridY}_${x + 1}x${y + 1}.png`;
+      const file = new File([blob], resultFileName, { type: "image/png" });
+      zip.file(resultFileName, file, {
         base64: true,
       });
     });
@@ -213,10 +215,16 @@ export async function downloadSplitImage({
   const base64PNG = getBase64PNG(fileData);
 
   const img = await loadImage(base64PNG);
+  const fileName = uploadedImageState.downloadName.substring(0, 25);
 
-  const content = await getSplittedFiles({ img, gridX, gridY });
+  const zip = await splitImageAndZip({
+    img,
+    gridX,
+    gridY,
+    fileName,
+  });
   const link = document.createElement("a");
-  link.href = URL.createObjectURL(content);
+  link.href = URL.createObjectURL(zip);
   link.download = `${uploadedImageState.downloadName}.zip`;
   document.body.appendChild(link);
   link.click();

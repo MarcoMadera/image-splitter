@@ -12,10 +12,11 @@ export interface IDrawImageWithGrid {
   target: string;
 }
 
-export interface IDrawGrid {
+export interface ISplitImageAndZip {
   img: HTMLImageElement;
   gridX: IDrawImageWithGrid["gridX"];
   gridY: IDrawImageWithGrid["gridY"];
+  fileName: string;
 }
 
 export interface IDownloadSplitImage {
