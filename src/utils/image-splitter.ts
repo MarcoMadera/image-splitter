@@ -7,7 +7,7 @@ import type {
 } from "types/image-splitter";
 import { loadImage, readFileData } from "utils";
 
-import { getContrastingColor, getDominantColor, rgbToHex } from "./colors";
+import { getContrastingColor, getDominantColor } from "./colors";
 import {
   GRID_LINE_DASH_SCALE,
   GRID_LINE_TRANSPARENCY,
@@ -178,9 +178,7 @@ export async function drawImageWithGrid({
   }
 
   const imageData = ctx?.getImageData(0, 0, image.width, image.height);
-  const contrastColor = rgbToHex(
-    getContrastingColor(getDominantColor(imageData))
-  );
+  const contrastColor = getContrastingColor(getDominantColor(imageData));
   const lineWidth = Math.min(cellWidth, cellHeight) * GRID_LINE_WIDTH_SCALE;
   const dashLength = Math.max(cellHeight, cellHeight) * GRID_LINE_DASH_SCALE;
   ctx.setLineDash([dashLength, dashLength]);
