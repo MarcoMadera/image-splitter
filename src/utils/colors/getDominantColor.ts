@@ -30,7 +30,7 @@ export function getDominantColor(
   const dominantColor = sortedColorMap.keys().next().value as string;
   const [r, g, b] = dominantColor.split(",").map((color) => parseInt(color));
 
-  if (!r || !g || !b) {
+  if (r === undefined || g === undefined || b === undefined) {
     return null;
   }
 
