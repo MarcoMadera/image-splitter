@@ -18,8 +18,8 @@ export async function getSplittedFiles({
   gridX,
   gridY,
   img,
-}: IDrawGrid): Promise<File[]> {
-  const files: File[] = [];
+}: IDrawGrid): Promise<Blob> {
+  const zip = new JSZip();
   const bitmap = await createImageBitmap(img);
   const { width, height } = bitmap;
 
@@ -32,7 +32,10 @@ export async function getSplittedFiles({
 
   const offScreenCanvas = new OffscreenCanvas(cellWidth, cellHeight);
   const ctx = offScreenCanvas.getContext("2d");
-  if (!ctx) return [];
+
+  if (!ctx) {
+    throw new Error("Canvas context not found");
+  }
 
   const promises = Array.from({ length: gridX * gridY }, (_, i) => {
     const x = i % gridX;
@@ -49,15 +52,17 @@ export async function getSplittedFiles({
       cellHeight
     );
     return offScreenCanvas.convertToBlob().then((b) => {
-      const fileName = `image_${x}_${y}.png`;
+      const fileName = `image_${gridX}_${gridX}_${x}_${y}.png`;
       const file = new File([b], fileName, { type: "image/png" });
-      files.push(file);
+      zip.file(fileName, file, {
+        base64: true,
+      });
     });
   });
 
   await Promise.all(promises);
-
-  return files;
+  const content = await zip.generateAsync({ type: "blob" });
+  return content;
 }
 
 function arrayBufferToBase64PNG(arrayBuffer: ArrayBuffer) {
@@ -199,8 +204,6 @@ export async function downloadSplitImage({
   gridY,
   uploadedImageState,
 }: IDownloadSplitImage): Promise<void> {
-  const zip = new JSZip();
-
   if (gridX <= 0 || gridY <= 0) {
     throw new Error("Grid size cannot be 0");
   }
@@ -211,17 +214,7 @@ export async function downloadSplitImage({
 
   const img = await loadImage(base64PNG);
 
-  const splittedImages = await getSplittedFiles({ img, gridX, gridY });
-
-  splittedImages.forEach((file, index) => {
-    const fileName = `${uploadedImageState.downloadName}_${index + 1}.png`;
-
-    zip.file(fileName, file, {
-      base64: true,
-    });
-  });
-
-  const content = await zip.generateAsync({ type: "blob" });
+  const content = await getSplittedFiles({ img, gridX, gridY });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(content);
   link.download = `${uploadedImageState.downloadName}.zip`;
