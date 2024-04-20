@@ -1,0 +1,147 @@
+<script>
+  import { wrapper } from "../utils/toast";
+
+  window.toast = wrapper.toast;
+</script>
+
+<style is:global>
+  .toaster {
+    z-index: 999999999;
+    position: fixed;
+  }
+
+  .toaster.bottom-right {
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .toaster.bottom-left {
+    bottom: 20px;
+    left: 20px;
+  }
+
+  .toaster.top-right {
+    top: 20px;
+    right: 20px;
+  }
+
+  .toaster.top-left {
+    top: 20px;
+    left: 20px;
+  }
+
+  .toaster.bottom-center {
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .toaster.top-center {
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .toaster.top-center ol.rack {
+    flex-direction: column-reverse;
+  }
+
+  .toaster.top-left ol.rack {
+    flex-direction: column-reverse;
+  }
+
+  .toaster.top-right ol.rack {
+    flex-direction: column-reverse;
+  }
+
+  .toaster.bottom-center ol.rack {
+    flex-direction: column;
+  }
+
+  .toaster.bottom-left ol.rack {
+    flex-direction: column;
+  }
+
+  .toaster.bottom-right ol.rack {
+    flex-direction: column;
+  }
+
+  ol.rack {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+  }
+
+  ol.rack li {
+    margin-bottom: 16px;
+  }
+
+  .toastUp {
+    animation: slideUp 0.3s ease-in-out;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes slideUp {
+    0% {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .toastDown {
+    animation: slideDown 0.3s ease-in-out;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes slideDown {
+    0% {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .fadeOutToast {
+    animation: fadeOut 0.3s ease-in-out;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes fadeOut {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  .shake {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  @keyframes shake {
+    0% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-5px);
+    }
+    50% {
+      transform: translateX(5px);
+    }
+    75% {
+      transform: translateX(-5px);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+</style>

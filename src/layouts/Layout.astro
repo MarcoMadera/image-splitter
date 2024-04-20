@@ -1,6 +1,7 @@
 ---
 import Footer from "components/Footer.astro";
 import GlobalStyles from "components/GlobalStyles.astro";
+import Toast from "components/Toast.astro";
 import Navbar from "components/Navbar.astro";
 import { SITE_DEFAULT_HUE } from "utils";
 interface Props {
@@ -58,6 +59,7 @@ let { title } = Astro.props;
         </div>
         <Footer />
       </div>
+      <Toast />
     </GlobalStyles>
   </body>
 </html>

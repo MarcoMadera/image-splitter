@@ -41,6 +41,7 @@ const images = await getImages();
     import type { IUploadedImageState } from "types/image-splitter";
     import type { Images } from "types/imagesResponse";
     import { onSwup } from "utils";
+    import { ToastTypes } from "types/toast";
 
     function init() {
       const gridXInput = document.getElementById("gridX") as HTMLInputElement;
@@ -146,21 +147,21 @@ const images = await getImages();
             target: "#imageContainer",
           });
         } catch (error) {
-          // TODO: Implement notification
           if (error instanceof Error) {
+            window.toast({
+              message: error.message,
+              type: ToastTypes.ERROR,
+            });
             if (error.message === "Grid size cannot be 0") {
-              console.error(error);
               return;
             }
 
             if (error.message === "Grid size too small") {
-              console.error(error);
               return;
             }
           }
 
           uploadedImageState.file = null;
-          console.error(error);
         }
       }
 
@@ -179,8 +180,12 @@ const images = await getImages();
             uploadedImageState,
           });
         } catch (error) {
-          // TODO: Implement notification
-          console.error(error);
+          if (error instanceof Error) {
+            window.toast({
+              message: error.message,
+              type: ToastTypes.ERROR,
+            });
+          }
         }
       }
 

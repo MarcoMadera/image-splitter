@@ -28,6 +28,12 @@ export default defineConfig({
         "fa6-brands": ["*"],
         "fa6-regular": ["*"],
         "fa6-solid": ["*"],
+        ep: [
+          "success-filled",
+          "circle-close-filled",
+          "warn-triangle-filled",
+          "info-filled",
+        ],
         mage: ["reload"],
       },
     }),
