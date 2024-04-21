@@ -52,10 +52,10 @@ const getToastContainer = (location?: string) => {
   let toaster = document.getElementById("toaster");
 
   if (!toaster) {
-    toaster = createToastContainer(location || "top-right");
+    toaster = createToastContainer(location ?? "top-right");
   } else {
     TOAST_LOCATIONS.forEach((loc) => toaster?.classList.remove(loc));
-    toaster.classList.add(`toaster`, location || "top-right");
+    toaster.classList.add(`toaster`, location ?? "top-right");
   }
 
   return toaster;
