@@ -27,7 +27,6 @@ function ImagesWrapper({
 
     getImages()
       .then((imagesRes) => {
-        localStorage.setItem("images", JSON.stringify(imagesRes));
         setImages(imagesRes);
       })
       .catch((err) => {

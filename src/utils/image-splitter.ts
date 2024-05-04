@@ -5,7 +5,7 @@ import type {
   ISplitImageAndZip,
   IUploadedImageState,
 } from "types/image-splitter";
-import { loadImage, readFileData } from "utils";
+import { getBase64PNG, loadImage, readFileData } from "utils";
 
 import { getContrastingColor, getDominantColor } from "./colors";
 import {
@@ -67,23 +67,6 @@ export async function splitImageAndZip({
   return content;
 }
 
-function arrayBufferToBase64PNG(arrayBuffer: ArrayBuffer) {
-  const uInt8Array = new Uint8Array(arrayBuffer);
-  const data = uInt8Array.reduce((d, byte) => {
-    return d + String.fromCharCode(byte);
-  }, "");
-  const base64String = btoa(data);
-  return `data:image/png;base64,${base64String}`;
-}
-
-function getBase64PNG(result?: FileReader["result"]): string {
-  if (!result) return "";
-  const isArrayBuffer = result instanceof ArrayBuffer;
-  const base64PNG = isArrayBuffer ? arrayBufferToBase64PNG(result) : result;
-
-  return base64PNG;
-}
-
 let cachedPaths = new Map<string, Path2D>();
 
 function clearPathCache(): void {
@@ -133,7 +116,9 @@ export function clearGridImageCache(): void {
 async function getCacheFileData(uploadedImageState: IUploadedImageState) {
   if (!cachedImages.has(uploadedImageState.name)) {
     const fileData = await readFileData(uploadedImageState.file);
-    const base64PNG = getBase64PNG(fileData);
+    if (!fileData) throw new Error("File data not found");
+    const base64PNG =
+      fileData instanceof ArrayBuffer ? getBase64PNG(fileData) : fileData;
     const image = await loadImage(base64PNG);
     cachedImages.set(uploadedImageState.name, image);
   }
@@ -163,12 +148,23 @@ export async function drawImageWithGrid({
   if (!imageTarget) {
     throw new Error("Target not found");
   }
-  const image = await getCacheFileData(uploadedImageState);
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
+  const blurHashURL = uploadedImageState.blurHashURL;
+  if (blurHashURL) {
+    const blurHashImage = await loadImage(blurHashURL);
+    canvas.width = uploadedImageState.width ?? 180;
+    canvas.height = uploadedImageState.height ?? 224;
+    ctx.drawImage(blurHashImage, 0, 0, canvas.width, canvas.height);
+
+    imageTarget.replaceChildren(canvas);
+  }
+
+  const image = await getCacheFileData(uploadedImageState);
   canvas.width = image.width;
   canvas.height = image.height;
+
   ctx.drawImage(image, 0, 0);
 
   if (gridX <= 0 || gridY <= 0) {

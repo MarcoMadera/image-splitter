@@ -25,11 +25,6 @@ const images = await getImages();
     <LoadingError>There was a problem loading the images</LoadingError>
     <Icon slot="reload-icon" name="mage:reload" size={18} />
   </ImagesWrapper>
-
-  <script is:inline define:vars={{ images }} type="module">
-    localStorage.setItem("images", JSON.stringify(images));
-  </script>
-
   <script>
     import {
       drawImageWithGrid,
@@ -37,10 +32,9 @@ const images = await getImages();
       removeFileExtension,
       getFileNameExtension,
       clearGridImageCache,
-    } from "utils/image-splitter";
+      onSwup,
+    } from "utils";
     import type { IUploadedImageState } from "types/image-splitter";
-    import type { Images } from "types/imagesResponse";
-    import { onSwup } from "utils";
     import { ToastTypes } from "types/toast";
 
     function init() {
@@ -193,6 +187,14 @@ const images = await getImages();
         uploadedImageState.name = imageState.name;
         uploadedImageState.file = imageState.file;
         uploadedImageState.extension = imageState.extension;
+        if (imageState.blurHashURL) {
+          uploadedImageState.blurHashURL = imageState.blurHashURL;
+        }
+        if (imageState.width && imageState.height) {
+          uploadedImageState.width = imageState.width;
+          uploadedImageState.height = imageState.height;
+        }
+
         handleChangeImage(new Event("change"));
         // TODO: Add loading animation
 
@@ -207,22 +209,13 @@ const images = await getImages();
         });
       }
 
-      imageDropContainer.addEventListener("drop", (e) => {
+      function handleDropImage(e: DragEvent) {
         e.preventDefault();
-        const imageId = e.dataTransfer?.getData("text");
-
-        if (imageId) {
-          const images: Images | null = JSON.parse(
-            localStorage.getItem("images") ?? "[]"
-          );
-          const image = images?.find((img) => img.id === imageId);
-          if (image) {
-            changeUploadedFile({
-              file: image.urls.regular,
-              name: image.slug,
-              extension: "",
-              downloadName: image.slug,
-            });
+        const imageDetails = e.dataTransfer?.getData("application/json");
+        if (imageDetails) {
+          const imageSate: IUploadedImageState = JSON.parse(imageDetails);
+          if (imageSate) {
+            changeUploadedFile(imageSate);
             return;
           } else {
             console.error("Image not found");
@@ -247,7 +240,9 @@ const images = await getImages();
             downloadName: file.name,
           });
         }
-      });
+      }
+
+      imageDropContainer.addEventListener("drop", handleDropImage);
 
       clearImageButton?.addEventListener("click", () => {
         uploadedImageState.file = null;
