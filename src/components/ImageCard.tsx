@@ -2,6 +2,7 @@ import { type ReactElement, useState } from "react";
 
 import type { IUploadedImageState } from "types/image-splitter";
 import type { Image } from "types/imagesResponse";
+import { getBlurhashURL } from "utils";
 
 interface IImageCard {
   image: Image;
@@ -9,20 +10,30 @@ interface IImageCard {
 
 function ImageCard({ image }: Readonly<IImageCard>): ReactElement {
   const [hasFocus, setHasFocus] = useState<boolean>(false);
+  const blurHashURL = getBlurhashURL(image.blur_hash, 90, 112);
+
+  const imageDetails: IUploadedImageState = {
+    file: image.urls.regular,
+    name: image.slug,
+    extension: "",
+    downloadName: "",
+    blurHashURL: blurHashURL,
+    width: image.width,
+    height: image.height,
+  };
 
   function handleImageClick() {
     if (image.urls.regular) {
       window.dispatchEvent(
         new CustomEvent<IUploadedImageState>("updateImageState", {
-          detail: {
-            file: image.urls.regular,
-            name: image.slug,
-            extension: "",
-            downloadName: "",
-          },
+          detail: imageDetails,
         })
       );
     }
+  }
+
+  function handleDrag(e: React.DragEvent<HTMLButtonElement>) {
+    e.dataTransfer.setData("application/json", JSON.stringify(imageDetails));
   }
 
   return (
@@ -30,12 +41,8 @@ function ImageCard({ image }: Readonly<IImageCard>): ReactElement {
       key={image.id}
       id={image.id}
       draggable={true}
-      onDragStart={(e) => {
-        e.dataTransfer.setData("text/plain", image.id);
-      }}
-      onClick={() => {
-        handleImageClick();
-      }}
+      onDragStart={handleDrag}
+      onClick={handleImageClick}
       onFocus={(e) => {
         e.currentTarget.classList.add("z-10", "scale-105", "shadow-lg");
         setHasFocus(true);
@@ -52,8 +59,13 @@ function ImageCard({ image }: Readonly<IImageCard>): ReactElement {
         alt={image.alt_description}
         className="h-full object-cover"
         width={180}
-        height={120}
+        height={224}
         loading="eager"
+        style={{
+          backgroundSize: "cover",
+          backgroundImage: `url(${blurHashURL})`,
+          backgroundColor: image.color,
+        }}
       />
       <div
         className={`${hasFocus ? "opacity-100" : "opacity-0"} absolute left-0 top-0 flex size-full flex-col items-start justify-end bg-black/25 p-2 transition-opacity group-hover:opacity-100`}

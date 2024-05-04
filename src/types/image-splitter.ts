@@ -3,6 +3,9 @@ export interface IUploadedImageState {
   name: string;
   downloadName: string;
   extension: string;
+  blurHashURL?: string;
+  width?: number;
+  height?: number;
 }
 
 export interface IDrawImageWithGrid {
