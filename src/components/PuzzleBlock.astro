@@ -1,0 +1,216 @@
+---
+const { image } = Astro.props;
+---
+
+<puzzle-block data-image={image}>
+  <div></div>
+</puzzle-block>
+
+<script>
+  import { ToastTypes } from "types/toast";
+
+  class PuzzleBlock extends HTMLElement {
+    constructor() {
+      super();
+
+      const imageUrl = this.dataset.image;
+
+      let puzzleContainer = this.querySelector("div") as HTMLElement;
+      let rows = 3;
+      let cols = 3;
+      let pieces = rows * cols;
+      let pieceWidth = 100;
+      let pieceHeight = 100;
+      let emptyPieceIndex = pieces - 1;
+
+      function shufflePuzzle(puzzle: number[]) {
+        const n = puzzle.length;
+        const shuffledPuzzle = puzzle.slice();
+
+        for (let i = n - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+
+          [shuffledPuzzle[i], shuffledPuzzle[j]] = [
+            shuffledPuzzle[j] as number,
+            shuffledPuzzle[i] as number,
+          ];
+        }
+
+        if (!isSolvable(shuffledPuzzle)) {
+          [shuffledPuzzle[0], shuffledPuzzle[1]] = [
+            shuffledPuzzle[1] as number,
+            shuffledPuzzle[0] as number,
+          ];
+        }
+
+        return shuffledPuzzle;
+      }
+
+      function isSolvable(puzzle: number[]) {
+        let inversions = 0;
+        for (let i = 0; i < puzzle.length - 1; i++) {
+          for (let j = i + 1; j < puzzle.length; j++) {
+            const iValue = puzzle[i] as number;
+            const jValue = puzzle[j] as number;
+            if (iValue > jValue && puzzle[i] !== 0 && puzzle[j] !== 0) {
+              inversions++;
+            }
+          }
+        }
+
+        if (puzzle.length % 2 === 0) {
+          const blankIndex = puzzle.indexOf(0);
+          const blankRow = Math.floor(blankIndex / Math.sqrt(puzzle.length));
+          inversions += blankRow;
+        }
+
+        return inversions % 2 === 0;
+      }
+
+      function shufflePieces() {
+        let piecesArray = [];
+        for (let i = 0; i < pieces; i++) {
+          piecesArray.push(i);
+        }
+        return shufflePuzzle(piecesArray);
+      }
+
+      function createPuzzle() {
+        puzzleContainer.innerHTML = "";
+        let piecesOrder = shufflePieces();
+        for (let i = 0; i < pieces; i++) {
+          let piece = document.createElement("div");
+          piece.className = "piece card-shadow";
+          const idValue = piecesOrder[i] as number;
+          piece.id = "piece" + idValue;
+          piece.setAttribute("data-index", i.toString());
+          if (i === pieces - 1) {
+            piece.style.backgroundImage = "none";
+          } else {
+            piece.style.backgroundImage = "url(" + imageUrl + ")";
+            piece.style.backgroundPosition =
+              -pieceWidth * (idValue % cols) +
+              "px " +
+              -pieceHeight * Math.floor(idValue / cols) +
+              "px";
+          }
+          piece.addEventListener("click", () => {
+            movePiece(i);
+          });
+          puzzleContainer.appendChild(piece);
+        }
+      }
+
+      function movePiece(currentIndex: number) {
+        let currentRowIndex = Math.floor(currentIndex / cols);
+        let currentColIndex = currentIndex % cols;
+        let emptyRowIndex = Math.floor(emptyPieceIndex / cols);
+        let emptyColIndex = emptyPieceIndex % cols;
+
+        if (
+          (currentRowIndex === emptyRowIndex &&
+            Math.abs(currentColIndex - emptyColIndex) === 1) ||
+          (currentColIndex === emptyColIndex &&
+            Math.abs(currentRowIndex - emptyRowIndex) === 1)
+        ) {
+          swapPieces(currentIndex);
+        } else {
+          window.toast({
+            message: "Invalid move!",
+            type: ToastTypes.WARNING,
+          });
+        }
+
+        if (isSolved()) {
+          window.toast({
+            message: "Congratulations! You solved the puzzle!",
+            type: ToastTypes.SUCCESS,
+          });
+        }
+      }
+
+      let doc = this;
+
+      function swapPieces(currentIndex: number) {
+        let currentPiece = doc.querySelector(
+          `[data-index='${currentIndex}']`
+        ) as HTMLElement | null;
+        let emptyPiece = doc.querySelector(
+          `[data-index='${emptyPieceIndex}']`
+        ) as HTMLElement | null;
+
+        if (!currentPiece || !emptyPiece) {
+          return;
+        }
+
+        let tempBackgroundPosition = currentPiece.style.backgroundPosition;
+        currentPiece.style.backgroundPosition =
+          emptyPiece.style.backgroundPosition;
+        currentPiece.style.backgroundImage = "none";
+        emptyPiece.style.backgroundPosition = tempBackgroundPosition;
+        emptyPiece.style.backgroundImage = "url(" + imageUrl + ")";
+        emptyPieceIndex = currentIndex;
+      }
+
+      function isSolved() {
+        const solvedPieces = [];
+        for (let i = 0; i < pieces; i++) {
+          if (i === emptyPieceIndex) continue;
+          let piece = doc.querySelector(
+            `[data-index='${i}']`
+          ) as HTMLElement | null;
+          if (!piece) {
+            return false;
+          }
+          let bgPositionX = parseInt(piece.style.backgroundPositionX, 10);
+          let bgPositionY = parseInt(piece.style.backgroundPositionY, 10);
+          let correctX = -pieceWidth * (i % cols);
+          let correctY = -pieceHeight * Math.floor(i / cols);
+          solvedPieces.push(
+            bgPositionX === correctX && bgPositionY === correctY
+          );
+        }
+        return solvedPieces.every((solved) => solved);
+      }
+
+      createPuzzle();
+    }
+  }
+
+  customElements.define("puzzle-block", PuzzleBlock);
+</script>
+
+<style>
+  div {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    grid-gap: 6px;
+    overflow: hidden;
+    position: relative;
+    background-color: var(--card-bg);
+    border: 8px solid var(--card-bg);
+    border-radius: 5px;
+    box-shadow: 0 0 4px 4px #0000001f;
+    box-sizing: content-box;
+    width: fit-content;
+  }
+  div :global(.piece) {
+    width: 100px;
+    height: 100px;
+    float: left;
+    background-size: 300px 300px;
+    cursor: pointer;
+    background-color: var(--enter-btn-bg);
+    border-radius: 5px;
+    display: grid;
+    align-items: center;
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--btn-content);
+    user-select: none;
+    z-index: 3;
+    transition: 0.1s;
+  }
+</style>
