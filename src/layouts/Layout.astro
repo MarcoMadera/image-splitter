@@ -6,9 +6,10 @@ import Navbar from "components/Navbar.astro";
 import { SITE_DEFAULT_HUE } from "utils";
 interface Props {
   title: string;
+  removeCols?: boolean;
 }
 
-let { title } = Astro.props;
+let { title, removeCols } = Astro.props;
 ---
 
 <!doctype html>
@@ -47,7 +48,7 @@ let { title } = Astro.props;
             "max-w-[var(--page-width)]",
             "h-[calc(100vh - 86px - 86px)]",
             "grid",
-            "grid-cols-[26rem_auto]",
+            removeCols ? "" : "grid-cols-[26rem_auto]",
             "grid-rows-[auto_auto_1fr_auto]",
             "mx-auto",
             "gap-4",
