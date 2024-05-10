@@ -208,7 +208,12 @@ export async function downloadSplitImage({
 
   const fileData = await readFileData(uploadedImageState.file);
 
-  const base64PNG = getBase64PNG(fileData);
+  if (!fileData) {
+    throw new Error("File data not found");
+  }
+
+  const base64PNG =
+    fileData instanceof ArrayBuffer ? getBase64PNG(fileData) : fileData;
 
   const img = await loadImage(base64PNG);
   const fileName = uploadedImageState.downloadName.substring(0, 25);
