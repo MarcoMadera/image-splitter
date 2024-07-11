@@ -41,7 +41,7 @@ const images = await getImages();
       const gridXInput = document.getElementById("gridX") as HTMLInputElement;
       const gridYInput = document.getElementById("gridY") as HTMLInputElement;
       const imageInput = document.getElementById(
-        "imageInput"
+        "imageInput",
       ) as HTMLInputElement;
       const downloadButton = document.getElementById("downloadButton");
       const imageContainer = document.getElementById("imageContainer");
@@ -62,7 +62,7 @@ const images = await getImages();
         set: <T extends keyof IUploadedImageState>(
           state: IUploadedImageState,
           prop: T,
-          value: IUploadedImageState[T]
+          value: IUploadedImageState[T],
         ): boolean => {
           state[prop] = value;
 
@@ -102,7 +102,7 @@ const images = await getImages();
 
       const uploadedImageState = new Proxy<IUploadedImageState>(
         { file: null, name: "image", extension: "", downloadName: "image" },
-        uploadedImageStateHandler
+        uploadedImageStateHandler,
       );
 
       function toggleDownloadButton(disabled?: boolean) {
@@ -115,10 +115,10 @@ const images = await getImages();
 
       async function handleChangeImage(e: Event) {
         const gridXInput = document.getElementById(
-          "gridX"
+          "gridX",
         ) as HTMLInputElement | null;
         const gridYInput = document.getElementById(
-          "gridY"
+          "gridY",
         ) as HTMLInputElement | null;
 
         try {

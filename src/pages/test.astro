@@ -1,24 +1,113 @@
 ---
-import PuzzleBlock from "components/PuzzleBlock.astro";
-import Layout from "layouts/Layout.astro";
 import { getImages } from "utils/apiCalls";
-
+import ImagesWrapper from "components/ImagesWrapper.tsx";
+import LoadingError from "components/LoadingError.astro";
+import SplitterDragAndDrop from "components/SplitterDragAndDrop.astro";
+import PuzzleBlockControls from "components/PuzzleBlockControls.astro";
+import SplitterLayout from "layouts/Splitter.astro";
+import { Icon } from "astro-icon/components";
 Astro.response.headers.set("Vercel-CDN-Cache-Control", "max-age=300");
 Astro.response.headers.set("CDN-Cache-Control", "max-age=60");
 
 const images = await getImages();
 ---
 
-<Layout title="Test" removeCols>
-  <div></div>
-  <main>
-    <h1 class="text-3xl font-bold text-center">Test</h1>
-    <section class="flex flex-wrap justify-center gap-2 py-2">
-      {
-        images?.map((image) => {
-          return <PuzzleBlock image={image.urls.regular} />;
-        })
+<SplitterLayout title="Test">
+  <PuzzleBlockControls slot="before-main" />
+  <SplitterDragAndDrop />
+  <ImagesWrapper
+    slot="after-main"
+    images={images}
+    title="Select an image"
+    client:load
+  >
+    <LoadingError>There was a problem loading the images</LoadingError>
+    <Icon slot="reload-icon" name="mage:reload" size={18} />
+  </ImagesWrapper>
+  <div id="section"></div>
+</SplitterLayout>
+
+<script>
+  import { onSwup } from "utils";
+  import "components/PuzzleBlock";
+  import type { IUploadedImageState } from "types/image-splitter";
+
+  function init() {
+    const imageDropContainer = document.getElementById("imageDropContainer");
+    const dragAndDropContainer = document.getElementById(
+      "drag-and-drop-container",
+    );
+    const imageInput = document.getElementById(
+      "imageInput",
+    ) as HTMLInputElement;
+    const blockSize = document.querySelector(
+      "#puzzle-block-size",
+    ) as HTMLInputElement;
+    function handleChangeImage(e: Event) {
+      try {
+        if (!dragAndDropContainer) {
+          throw new Error("Image Drop Container not found");
+        }
+
+        if ((e.target as HTMLInputElement)?.files?.[0]) {
+          throw new Error("To be implemented");
+        }
+        // TODO: Do the proper implementation
+        dragAndDropContainer.style.display = "none";
+      } catch (error) {
+        if (error instanceof Error) {
+          window.toast({ message: error.message });
+        } else {
+          console.error(error);
+        }
       }
-    </section>
-  </main>
-</Layout>
+    }
+
+    let image: string | null = null;
+
+    function addButtonChangeListener() {
+      window.addEventListener("updateImageState", (e) => {
+        const event = e as CustomEvent<IUploadedImageState>;
+        const block = document.createElement("puzzle-block");
+        const blockSize = document.querySelector(
+          "#puzzle-block-size",
+        ) as HTMLInputElement;
+        if (!blockSize) {
+          return;
+        }
+        if (typeof event.detail.file === "string") {
+          block.setAttribute("data-image", event.detail.file);
+          image = event.detail.file;
+        }
+        block.setAttribute("data-size", blockSize.value);
+        if (dragAndDropContainer) {
+          dragAndDropContainer.style.display = "none";
+        }
+        document.querySelector("#section")?.replaceChildren(block);
+      });
+    }
+
+    function handleDropImage() {
+      window.toast({ message: "To be impemented" });
+    }
+
+    function handleBlockSizeChange() {
+      if (!image) return;
+      const block = document.createElement("puzzle-block");
+      block.setAttribute("data-image", image);
+      block.setAttribute("data-size", blockSize.value);
+      if (dragAndDropContainer) {
+        dragAndDropContainer.style.display = "none";
+      }
+      document.querySelector("#section")?.replaceChildren(block);
+    }
+
+    addButtonChangeListener();
+
+    imageDropContainer?.addEventListener("drop", handleDropImage);
+    imageInput?.addEventListener("change", handleChangeImage);
+    blockSize?.addEventListener("change", handleBlockSizeChange);
+  }
+
+  onSwup("visit:end", init);
+</script>
