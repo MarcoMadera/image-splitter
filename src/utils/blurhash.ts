@@ -35,7 +35,7 @@ function decodeAC(value: number, maximumValue: number): number[] {
 function decodeBlurhash(
   blurhash: string,
   width: number,
-  height: number
+  height: number,
 ): Uint8ClampedArray {
   if (!blurhash || blurhash.length < 6) {
     throw new Error("The blurhash string must be at least 6 characters");
@@ -112,7 +112,7 @@ function parsePixels(pixels: Uint8ClampedArray, width: number, height: number) {
 export function getBlurhashURL(
   blurhash: string,
   width: number,
-  height: number
+  height: number,
 ): string {
   try {
     const pixels = decodeBlurhash(blurhash, width, height);

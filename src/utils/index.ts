@@ -10,3 +10,4 @@ export * from "./loadImage";
 export * from "./readFileData";
 export * from "./setClickOutsideToClose";
 export * from "./swup";
+export * from "./isInEnum";
